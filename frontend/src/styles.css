@@ -1,0 +1,67 @@
+:root {
+  font-family: Inter, "Microsoft YaHei", sans-serif;
+  color: #1f2937;
+  background: #f5f7fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+.app-layout {
+  min-height: 100vh;
+}
+
+.brand {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 20px 24px;
+}
+
+.app-header {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid #eef0f4;
+  display: flex;
+  padding: 0 28px;
+}
+
+.app-header h4 {
+  margin: 0;
+}
+
+.app-content {
+  padding: 32px;
+}
+
+.dashboard-page {
+  margin: 0 auto;
+  max-width: 920px;
+}
+
+.status-card {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 12px;
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+}
+
+.status-card p {
+  margin: 6px 0 0;
+}
+
+.status-icon {
+  color: #1677ff;
+  font-size: 28px;
+}
