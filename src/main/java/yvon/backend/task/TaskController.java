@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import yvon.backend.auth.UserPrincipal;
 import yvon.backend.common.api.ApiResponse;
 import yvon.backend.organization.PageResponse;
+import yvon.backend.audit.AuditAction;
 
 @RestController
 @Validated
@@ -26,6 +27,7 @@ public class TaskController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('task:create')")
+    @AuditAction(resourceType = "TASK", action = "CREATE")
     public ApiResponse<TaskResponse> create(@Valid @RequestBody TaskCreateRequest request,
                                              org.springframework.security.core.Authentication authentication) {
         return ApiResponse.success(taskService.create(request, principal(authentication)));
@@ -54,6 +56,7 @@ public class TaskController {
 
     @PatchMapping("/{taskId}")
     @PreAuthorize("hasAuthority('task:update')")
+    @AuditAction(resourceType = "TASK", action = "UPDATE")
     public ApiResponse<TaskResponse> updateDraft(@PathVariable Long taskId, @Valid @RequestBody TaskUpdateRequest request,
                                                   org.springframework.security.core.Authentication authentication) {
         return ApiResponse.success(taskService.updateDraft(taskId, request, principal(authentication)));
@@ -61,6 +64,7 @@ public class TaskController {
 
     @DeleteMapping("/{taskId}")
     @PreAuthorize("hasAuthority('task:delete')")
+    @AuditAction(resourceType = "TASK", action = "DELETE")
     public ApiResponse<Void> deleteDraft(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                           org.springframework.security.core.Authentication authentication) {
         taskService.deleteDraft(taskId, request, principal(authentication));
@@ -76,6 +80,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/submit")
     @PreAuthorize("hasAuthority('task:submit')")
+    @AuditAction(resourceType = "TASK", action = "SUBMIT")
     public ApiResponse<TaskResponse> submit(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                             org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.SUBMIT, request, authentication);
@@ -83,6 +88,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/accept")
     @PreAuthorize("hasAuthority('task:accept')")
+    @AuditAction(resourceType = "TASK", action = "ACCEPT")
     public ApiResponse<TaskResponse> accept(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                             org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.ACCEPT, request, authentication);
@@ -90,6 +96,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/submit-review")
     @PreAuthorize("hasAuthority('task:review')")
+    @AuditAction(resourceType = "TASK", action = "SUBMIT_REVIEW")
     public ApiResponse<TaskResponse> submitReview(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                                    org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.SUBMIT_REVIEW, request, authentication);
@@ -97,6 +104,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/approve")
     @PreAuthorize("hasAuthority('task:approve')")
+    @AuditAction(resourceType = "TASK", action = "APPROVE")
     public ApiResponse<TaskResponse> approve(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                               org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.APPROVE, request, authentication);
@@ -104,6 +112,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/complete")
     @PreAuthorize("hasAuthority('task:approve')")
+    @AuditAction(resourceType = "TASK", action = "COMPLETE")
     public ApiResponse<TaskResponse> complete(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                                org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.APPROVE, request, authentication);
@@ -111,6 +120,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/reject")
     @PreAuthorize("hasAuthority('task:approve')")
+    @AuditAction(resourceType = "TASK", action = "REJECT")
     public ApiResponse<TaskResponse> reject(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                              org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.REJECT, request, authentication);
@@ -118,6 +128,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/start")
     @PreAuthorize("hasAuthority('task:submit')")
+    @AuditAction(resourceType = "TASK", action = "START")
     public ApiResponse<TaskResponse> start(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                            org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.START, request, authentication);
@@ -125,6 +136,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/cancel")
     @PreAuthorize("hasAuthority('task:cancel')")
+    @AuditAction(resourceType = "TASK", action = "CANCEL")
     public ApiResponse<TaskResponse> cancel(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                              org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.CANCEL, request, authentication);
@@ -132,6 +144,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/archive")
     @PreAuthorize("hasAuthority('task:archive')")
+    @AuditAction(resourceType = "TASK", action = "ARCHIVE")
     public ApiResponse<TaskResponse> archive(@PathVariable Long taskId, @Valid @RequestBody TaskTransitionRequest request,
                                               org.springframework.security.core.Authentication authentication) {
         return transition(taskId, TaskCommand.ARCHIVE, request, authentication);
@@ -139,6 +152,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/transfer")
     @PreAuthorize("hasAuthority('task:assign')")
+    @AuditAction(resourceType = "TASK", action = "TRANSFER")
     public ApiResponse<TaskResponse> transfer(@PathVariable Long taskId, @Valid @RequestBody TransferTaskRequest request,
                                                org.springframework.security.core.Authentication authentication) {
         return ApiResponse.success(taskService.transfer(taskId, request, principal(authentication)));

@@ -16,7 +16,7 @@ Stage 3 adds stateless JWT authentication, password verification with BCrypt, cu
 
 The application never stores a plaintext password in Flyway. To create a local administrator, set `TASKFLOW_BOOTSTRAP_ADMIN_ENABLED=true` and `TASKFLOW_BOOTSTRAP_ADMIN_PASSWORD` before starting the backend. The initializer is idempotent and assigns the built-in `system_admin` role.
 
-The development example used during verification was `admin / ChangeMe123!`; do not reuse it outside a local environment.
+Do not put a real password in this document or in Flyway. Use a local-only secret manager or an ignored environment file, and rotate the bootstrap password after the first login.
 
 ## Permission boundary
 

@@ -3,6 +3,8 @@ package yvon.backend.task;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,10 +40,19 @@ public class TaskService {
     private final DataScopeService dataScopeService;
     private final JdbcTemplate jdbcTemplate;
     private final ReminderPlanService reminderPlanService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TaskService(TaskMapper taskMapper, SysUserMapper userMapper, SysDepartmentMapper departmentMapper,
                        ProjectService projectService, DataScopeService dataScopeService, JdbcTemplate jdbcTemplate,
                        ReminderPlanService reminderPlanService) {
+        this(taskMapper, userMapper, departmentMapper, projectService, dataScopeService, jdbcTemplate,
+                reminderPlanService, event -> { });
+    }
+
+    @Autowired
+    public TaskService(TaskMapper taskMapper, SysUserMapper userMapper, SysDepartmentMapper departmentMapper,
+                       ProjectService projectService, DataScopeService dataScopeService, JdbcTemplate jdbcTemplate,
+                       ReminderPlanService reminderPlanService, ApplicationEventPublisher eventPublisher) {
         this.taskMapper = taskMapper;
         this.userMapper = userMapper;
         this.departmentMapper = departmentMapper;
@@ -49,6 +60,7 @@ public class TaskService {
         this.dataScopeService = dataScopeService;
         this.jdbcTemplate = jdbcTemplate;
         this.reminderPlanService = reminderPlanService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -194,6 +206,8 @@ public class TaskService {
         }
         writeOperationLog(task, principal.userId(), command.name(), from.name(), target.name(), null,
                 request.version(), request.version() + 1);
+        eventPublisher.publishEvent(new TaskStatusChangedEvent(TaskStatusChangedMessage.of(taskId, from.name(), target.name(),
+                principal.userId(), request.version() + 1, TraceIdContext.current().orElse(null))));
         if (target == TaskStatus.COMPLETED || target == TaskStatus.CANCELLED || target == TaskStatus.ARCHIVED) {
             reminderPlanService.cancelForTask(taskId);
         }

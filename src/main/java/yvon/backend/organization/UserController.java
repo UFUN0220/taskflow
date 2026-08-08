@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import yvon.backend.common.api.ApiResponse;
 import yvon.backend.auth.UserPrincipal;
+import yvon.backend.audit.AuditAction;
 
 @Validated
 @RestController
@@ -46,12 +47,14 @@ public class UserController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('user:write')")
+    @AuditAction(resourceType = "USER", action = "CREATE")
     public ApiResponse<UserSummaryResponse> create(@Valid @RequestBody CreateUserRequest request) {
         return ApiResponse.success(userManagementService.create(request));
     }
 
     @PatchMapping("/{userId}/status")
     @PreAuthorize("hasAuthority('user:write')")
+    @AuditAction(resourceType = "USER", action = "STATUS_UPDATE")
     public ApiResponse<UserSummaryResponse> updateStatus(@PathVariable Long userId,
                                                           @Valid @RequestBody UpdateUserStatusRequest request,
                                                           Authentication authentication) {
@@ -61,6 +64,7 @@ public class UserController {
 
     @PutMapping("/{userId}/roles")
     @PreAuthorize("hasAuthority('user:role:write')")
+    @AuditAction(resourceType = "USER", action = "ROLE_ASSIGN")
     public ApiResponse<UserSummaryResponse> assignRoles(@PathVariable Long userId,
                                                          @Valid @RequestBody AssignUserRolesRequest request) {
         return ApiResponse.success(userManagementService.assignRoles(userId, request));

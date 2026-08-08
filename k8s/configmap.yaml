@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskflow-config
+  labels:
+    app.kubernetes.io/name: taskflow-platform
+data:
+  # Docker Desktop Kubernetes can reach Compose-published ports through this host alias.
+  # Change to host.minikube.internal when using Minikube if that alias is required.
+  INFRA_HOST: host.docker.internal
+  MYSQL_DATABASE: taskflow
+  MYSQL_PORT: "3307"
+  REDIS_PORT: "6380"
+  RABBITMQ_PORT: "5673"
+  MINIO_PORT: "9000"
+  MINIO_BUCKET: taskflow-attachments
+  WEBSOCKET_ENDPOINT: /ws/notifications
+  WEBSOCKET_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+  ATTACHMENT_ENABLED: "true"
+  REMINDER_ENABLED: "true"
+  AUDIT_ENABLED: "true"

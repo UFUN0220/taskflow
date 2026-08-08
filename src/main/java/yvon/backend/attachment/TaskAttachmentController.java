@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import yvon.backend.auth.UserPrincipal;
 import yvon.backend.common.api.ApiResponse;
 import yvon.backend.organization.PageResponse;
+import yvon.backend.audit.AuditAction;
 
 import java.nio.charset.StandardCharsets;
 
@@ -69,6 +70,7 @@ public class TaskAttachmentController {
 
     @DeleteMapping("/{attachmentId}")
     @PreAuthorize("hasAuthority('task:attachment:read')")
+    @AuditAction(resourceType = "ATTACHMENT", action = "DELETE")
     public ApiResponse<Void> delete(@PathVariable Long taskId, @PathVariable Long attachmentId,
                                     org.springframework.security.core.Authentication authentication) {
         attachmentService.delete(taskId, attachmentId, principal(authentication));

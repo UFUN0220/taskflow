@@ -34,6 +34,13 @@ body {
   padding: 0 28px;
 }
 
+.header-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
 .app-header h4 {
   margin: 0;
 }
@@ -45,6 +52,42 @@ body {
 .dashboard-page {
   margin: 0 auto;
   max-width: 920px;
+}
+
+.page-stack {
+  display: flex;
+  width: 100%;
+}
+
+.page-heading {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.page-heading h2 {
+  margin: 10px 0 4px;
+}
+
+.login-page,
+.page-loading {
+  align-items: center;
+  background: #f5f7fb;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.login-card {
+  max-width: 420px;
+  width: 100%;
+}
+
+.drawer-stack {
+  display: flex;
+  width: 100%;
 }
 
 .status-card {

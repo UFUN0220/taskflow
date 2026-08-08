@@ -62,6 +62,18 @@ class TaskAttachmentServiceTest {
     }
 
     @Test
+    void binaryAttachmentMustMatchItsDeclaredContentSignature() {
+        MockMultipartFile file = new MockMultipartFile("file", "image.png", "image/png",
+                "not-a-png".getBytes());
+
+        assertThatThrownBy(() -> service.upload(9L, file, TestFixtures.principal()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("内容与声明类型不匹配");
+
+        verifyNoInteractions(metadataService, storage);
+    }
+
+    @Test
     void attachmentFromAnotherTaskIsNotAccessibleEvenWhenUserCanSeeBothTasks() {
         TaskAttachmentEntity available = attachment(23L, 1, "AVAILABLE");
         when(metadataService.requireAvailable(23L)).thenReturn(available);

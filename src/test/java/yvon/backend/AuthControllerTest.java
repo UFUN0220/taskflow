@@ -5,6 +5,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
@@ -68,5 +69,19 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.code").value("0"))
                 .andExpect(jsonPath("$.data.accessToken").value("jwt-test-token"))
                 .andExpect(jsonPath("$.data.userId").value(3));
+    }
+
+    @Test
+    void badCredentialsReturnUnauthorizedWithoutIssuingToken() throws Exception {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("bad credentials"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType("application/json")
+                        .content("{\"login\":\"admin\",\"password\":\"wrong\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("COMMON_401"));
+
+        org.mockito.Mockito.verifyNoInteractions(tokenService);
     }
 }

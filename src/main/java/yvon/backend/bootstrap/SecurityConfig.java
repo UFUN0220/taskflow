@@ -35,6 +35,7 @@ public class SecurityConfig {
             }
             http.authorizeHttpRequests(authorize -> authorize
                             .requestMatchers("/api/health", "/actuator/health", "/api/auth/login",
+                                    "/ws/notifications", "/ws/notifications/**",
                                     "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                             .anyRequest().authenticated())
                     .exceptionHandling(exception -> exception

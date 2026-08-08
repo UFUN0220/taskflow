@@ -55,7 +55,8 @@ erDiagram
 | `task_comment` | 任务评论和系统事件 | 按任务+时间查询 |
 | `task_attachment` | 附件元数据 | bucket+object key 唯一；不存文件内容 |
 | `task_operation_log` | 任务操作和状态变化 | 状态前后值、前后 JSON、操作者、Trace ID |
-| `notification` | 用户最终可查询通知 | 用户+状态+时间联合查询 |
+| `notification` | 用户最终可查询通知 | 用户+状态+时间联合查询；来源消息+用户幂等 |
+| `notification_dead_letter` | 通知消费失败与补偿记录 | `message_id` 唯一；状态+失败时间查询 |
 | `reminder_plan` | 持久化提醒计划 | 任务+类型+触发时间唯一；状态+触发时间扫描 |
 | `audit_log` | 跨模块审计 | Trace、操作者、资源和结果 |
 
@@ -73,6 +74,8 @@ erDiagram
 | `idx_task_attachment_task_created` | 任务附件列表 | 对象 key 已有唯一约束 |
 | `idx_task_operation_task_occurred` | 还原任务操作时间线 | 不给 JSON 前后数据建索引 |
 | `idx_notification_user_status_created` | 未读通知分页和全部已读 | 不给 content 建索引 |
+| `uk_notification_source_message_user` | 防止同一事件重复生成同一用户通知 | source_message_id 允许手工通知为空 |
+| `idx_notification_dead_status_failed` | 查看待处理/已死信通知 | 不给 payload_json 建索引 |
 | `idx_reminder_status_trigger` | 定时任务领取到期提醒 | 与持久化计划状态直接对应 |
 | `idx_audit_resource_occurred` | 按资源追踪审计记录 | `detail_json` 仅作为详情，不做无依据索引 |
 

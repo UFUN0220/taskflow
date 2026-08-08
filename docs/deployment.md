@@ -1,4 +1,28 @@
-# 阶段 0 部署说明
+# 阶段 16 部署说明
+
+## 完整容器模式
+
+阶段 16 的 Compose 会启动前端、后端、MySQL、Redis、RabbitMQ 和 MinIO 六个服务。后端容器通过内部服务名连接 `mysql:3306`、`redis:6379`、`rabbitmq:5672` 和 `minio:9000`；浏览器只访问前端 Nginx，Nginx 将 `/api`、`/actuator` 和 `/ws` 代理到 `backend:8080`。
+
+首次使用执行：
+
+```powershell
+.\scripts\init-compose.ps1 -Rebuild
+```
+
+脚本会在 `.env` 不存在时从 `.env.example` 创建，并等待所有服务健康。默认前端地址为 `http://localhost:5173`，后端健康检查为 `http://localhost:8080/actuator/health`。端口和凭据均可通过 `.env` 覆盖。
+
+停止服务但保留卷：
+
+```powershell
+.\scripts\cleanup-compose.ps1
+```
+
+删除卷会清空本地数据库、Redis、RabbitMQ 和 MinIO 数据，必须显式确认：
+
+```powershell
+.\scripts\cleanup-compose.ps1 -RemoveVolumes -ConfirmDataLoss
+```
 
 ## 本地基础设施
 
@@ -11,7 +35,7 @@ docker compose up -d
 docker compose ps
 ```
 
-阶段 0 不提供删除卷的清理命令，避免误删本地数据。后续如需清理，必须明确确认目标卷和数据范围。
+旧的基础设施启动命令仍可用于只启动中间件：`docker compose up -d mysql redis rabbitmq minio`。完整应用启动请使用上面的初始化脚本。
 
 ## Maven 用户目录
 
@@ -29,6 +53,6 @@ Maven 用户配置已迁移到 `F:\projects_2027\taskflow-platform\maven-user`�
 
 ## 应用
 
-后端默认监听 8080，前端开发服务器监听 5173。阶段 0 的 Compose 文件不启动应用容器；完整应用容器化属于阶段 16。
+后端默认监听 8080，前端开发服务器监听 5173。使用 `npm run dev` 时，Vite 将 `/api` 和 `/ws` 代理到宿主机后端；使用 Compose 时，前端由 Nginx 提供静态文件和同源代理。
 
 如果需要本地数据库连接，复制 `src/main/resources/application-local.yml.example` 为 `application-local.yml` 并修改凭据；该文件已被 Git 忽略。

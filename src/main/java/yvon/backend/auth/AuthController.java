@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import yvon.backend.common.api.ApiResponse;
+import yvon.backend.audit.AuditAction;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,6 +30,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @AuditAction(resourceType = "AUTH", action = "LOGIN")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(request.login(), request.password()));

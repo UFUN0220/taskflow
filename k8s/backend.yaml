@@ -1,0 +1,179 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: taskflow-backend
+    app.kubernetes.io/part-of: taskflow-platform
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: taskflow-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: taskflow-backend
+        app.kubernetes.io/part-of: taskflow-platform
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: backend
+          image: taskflow-platform-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: taskflow-config
+                  key: MYSQL_DATABASE
+            - name: INFRA_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: taskflow-config
+                  key: INFRA_HOST
+            - name: DB_URL
+              value: jdbc:mysql://$(INFRA_HOST):3307/$(MYSQL_DATABASE)?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: taskflow-secret
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: taskflow-secret
+                  key: DB_PASSWORD
+            - name: FLYWAY_ENABLED
+              value: "true"
+            - name: REDIS_URL
+              value: redis://$(INFRA_HOST):6380
+            - name: RABBITMQ_HOST
+              value: $(INFRA_HOST)
+            - name: RABBITMQ_PORT
+              value: "5673"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: taskflow-secret
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: taskflow-secret
+                  key: RABBITMQ_PASSWORD
+            - name: MINIO_ENDPOINT
+              value: http://$(INFRA_HOST):9000
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: taskflow-secret
+                  key: MINIO_ACCESS_KEY
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: taskflow-secret
+                  key: MINIO_SECRET_KEY
+            - name: MINIO_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: taskflow-config
+                  key: MINIO_BUCKET
+            - name: ATTACHMENT_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: taskflow-config
+                  key: ATTACHMENT_ENABLED
+            - name: REMINDER_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: taskflow-config
+                  key: REMINDER_ENABLED
+            - name: AUDIT_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: taskflow-config
+                  key: AUDIT_ENABLED
+            - name: TASKFLOW_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: taskflow-secret
+                  key: TASKFLOW_JWT_SECRET
+            - name: TASKFLOW_BOOTSTRAP_ADMIN_ENABLED
+              value: "true"
+            - name: TASKFLOW_BOOTSTRAP_ADMIN_USERNAME
+              value: admin
+            - name: TASKFLOW_BOOTSTRAP_ADMIN_EMPLOYEE_NO
+              value: ADMIN001
+            - name: TASKFLOW_BOOTSTRAP_ADMIN_DISPLAY_NAME
+              value: System Administrator
+            - name: TASKFLOW_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: taskflow-secret
+                  key: TASKFLOW_BOOTSTRAP_ADMIN_PASSWORD
+            - name: WEBSOCKET_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: taskflow-config
+                  key: WEBSOCKET_ENDPOINT
+            - name: WEBSOCKET_ALLOWED_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: taskflow-config
+                  key: WEBSOCKET_ALLOWED_ORIGINS
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: taskflow-backend
+    app.kubernetes.io/part-of: taskflow-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: taskflow-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

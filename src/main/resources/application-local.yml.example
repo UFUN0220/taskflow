@@ -16,6 +16,14 @@ spring:
     password: taskflow_local
 
 taskflow:
+  audit:
+    enabled: true
+  websocket:
+    enabled: true
+    endpoint: /ws/notifications
+    allowed-origins:
+      - http://localhost:5173
+      - http://127.0.0.1:5173
   infrastructure:
     redis-url: redis://localhost:6380
     rabbitmq-host: localhost
@@ -34,6 +42,15 @@ taskflow:
       exchange: taskflow.reminder
       queue: taskflow.reminder.dispatch
       routing-key: reminder.due
+      task-status-routing-key: task.status.changed
+      retry-exchange: taskflow.reminder.retry
+      retry-queue: taskflow.reminder.retry
+      retry-routing-key: reminder.retry
+      dead-letter-exchange: taskflow.reminder.dlx
+      dead-letter-queue: taskflow.reminder.dead
+      dead-letter-routing-key: reminder.dead
+      max-attempts: 3
+      retry-delay-ms: 5000
   attachment:
     enabled: true
     minio:

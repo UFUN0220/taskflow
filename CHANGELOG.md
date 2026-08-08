@@ -1,5 +1,102 @@
 # Changelog
 
+## 阶段 19 - 面试和简历材料 - 2026-08-08
+
+- 新增基于已验证代码整理的中文简历描述、30 秒和 2 分钟项目介绍，以及实习场景下的个人职责边界。
+- 新增架构图、任务状态图、RBAC/数据范围图和提醒消息链路图。
+- 新增 50 个项目深挖问题及参考回答、5 个困难问题、可如实量化指标和禁止/未验证表述清单。
+- 明确区分个人贡献、团队协作成果和项目整体成果。
+
+## Stage 18 - Security and quality review - 2026-08-08
+
+- Hardened audit logging to avoid treating client-controlled `X-Forwarded-For` as authoritative.
+- Added attachment content-signature checks for PDF, PNG, JPEG and NUL-byte rejection for text files.
+- Added regression coverage for spoofed forwarded addresses and mismatched binary attachment content.
+- Removed a copyable administrator password from authentication documentation.
+- Documented unresolved production risks including default local secrets, localStorage token exposure, missing login rate limiting, and single-instance local infrastructure.
+
+## Stage 17 - Local Kubernetes deployment - 2026-08-08
+
+- Added Namespace, ConfigMap, Secret, frontend/backend Deployments, and ClusterIP Services under `k8s/`.
+- Configured two backend replicas, RollingUpdate strategy, startup/readiness/liveness probes, and resource requests/limits.
+- Added a PowerShell renderer/deployer with optional Kind and Minikube local-image loading.
+- Documented the local learning topology where Kubernetes hosts the application layer and Docker Compose continues to provide middleware.
+- Did not claim live Pod recovery validation because the current Kubernetes context requires credentials and Kind/Minikube are not installed.
+
+## Stage 16 - Docker Compose deployment - 2026-08-07
+
+- Added multi-stage Java 17 backend and Node/Nginx frontend Dockerfiles.
+- Extended Compose from infrastructure-only to a six-service application deployment with internal service addresses, health checks, restart policies, environment-driven ports and credentials, and persistent named volumes.
+- Added safe PowerShell initialization and cleanup scripts; volume removal requires explicit confirmation flags.
+- Documented local development mode versus full-container mode.
+
+## Stage 15 - Query optimization and performance harness - 2026-08-07
+
+- Added standard-library Python tooling for configurable department/user/task data preparation and login, task list, task detail, task creation, state update, and notification list benchmark scenarios.
+- Added EXPLAIN statements and a PowerShell runtime collector for Actuator, JVM, and Redis observations.
+- Exposed authenticated Actuator metrics for connection-pool, executor, JVM, and GC inspection.
+- Did not prefill performance metrics or change indexes before a real baseline identifies a bottleneck.
+
+## Stage 14 - Automated testing - 2026-08-07
+
+- Added expired/malformed JWT and invalid-credential authentication regression tests.
+- Added an opt-in Testcontainers smoke test covering fresh Flyway migration on MySQL and availability of Redis, RabbitMQ, and MinIO.
+- Documented the existing regression categories for RBAC, data scope, state transitions, optimistic concurrency, notification idempotency, reminder recovery/cancellation, attachment authorization, and audit consistency.
+- Kept the default Maven test command Docker-independent; container tests require `-Dtaskflow.integration=true`.
+
+## Stage 13 - Frontend foundation - 2026-08-07
+
+- Added React login/logout, persisted access tokens, current-user loading, automatic 401 sign-out, and unified API error handling.
+- Added project dashboard, task list/detail/create/edit/status/assignment flows, comments, attachments, notification center integration, and duplicate-submit protection.
+- Added permission-aware user, role, and department management pages.
+
+## Stage 12 - Audit logs and observability - 2026-08-07
+
+- Added `AuditAction` AOP auditing for login, permission/user changes, task key operations, attachment deletion, and notification dead-letter replay.
+- Added protected audit-log queries with `audit:view`, safe metadata-only details, trace/operator/resource/result fields, slow-request WARN logging, RabbitMQ messageId MDC correlation, and Actuator health probes.
+- Added stage 12 unit coverage for successful/failed audit recording and sensitive-value exclusion.
+
+## Stage 11 - WebSocket notification center - 2026-08-07
+
+### Added
+
+- Added STOMP over WebSocket endpoint `/ws/notifications` with JWT authentication in the STOMP `CONNECT` frame.
+- Added server-derived user destinations, multi-device session tracking, and disconnect cleanup.
+- Added after-commit notification push events with failure isolation from notification/task transactions.
+- Added a lightweight frontend notification center with HTTP unread backfill, read/all-read actions, bounded reconnects, and Vite WebSocket proxying.
+- Added WebSocket authentication and push-target unit tests.
+
+### Fixed
+
+- Compare JWT numeric `uid` by value instead of Java wrapper type, so valid small user IDs parsed as `Integer` authenticate correctly against database `Long` IDs.
+- Wrap immutable STOMP headers and return a new authenticated message so `CONNECT` authentication works with Spring's immutable message headers.
+
+### Not included
+
+- The full frontend login workflow remains a later stage; the notification center reads an existing access token from local storage.
+
+## Documentation - complete phased development prompt - 2026-08-07
+
+### Added
+
+- Archived the complete user-provided Codex phased development prompt at `docs/codex-phased-development-prompt.md`.
+- Added the prompt to the README documentation index for future stage planning and acceptance checks.
+
+## Stage 10 - RabbitMQ asynchronous notifications - 2026-08-07
+
+### Added
+
+- Added V8 notification source-message idempotency, dead-letter records, and notification/dead-letter permissions.
+- Added reminder and task-status event messages with event type, message ID, trace ID propagation, and after-commit task-status publishing.
+- Added manual-Ack notification consumer, bounded TTL retry queue, dead-letter queue, and explicit failure-reason recording.
+- Added idempotent notification creation for task assignees and task-status recipients.
+- Added current-user notification pagination, unread count, mark-read, mark-all-read, dead-letter viewing, and administrator replay APIs.
+- Added publisher confirm, mandatory return, and correlation-data configuration for RabbitMQ producers.
+
+### Not included
+
+- WebSocket real-time notification delivery remains in stage 11.
+
 ## Stage 9 - reminder plans - 2026-08-07
 
 ### Added

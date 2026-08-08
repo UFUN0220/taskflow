@@ -174,8 +174,14 @@ public class TaskAttachmentService {
         }
         try {
             byte[] content = file.getBytes();
+            if (!contentSignatureMatches(content, extension)) {
+                throw new BusinessException(BusinessErrorCode.INVALID_PARAMETER, "附件内容与声明类型不匹配");
+            }
             return new ValidatedFile(originalFilename, extension, contentType, content, sha256(content));
         } catch (Exception exception) {
+            if (exception instanceof BusinessException businessException) {
+                throw businessException;
+            }
             throw new BusinessException(BusinessErrorCode.INVALID_PARAMETER, "附件内容读取失败");
         }
     }
@@ -209,6 +215,31 @@ public class TaskAttachmentService {
             case "txt" -> MediaType.TEXT_PLAIN_VALUE.equals(contentType);
             default -> false;
         };
+    }
+
+    private boolean contentSignatureMatches(byte[] content, String extension) {
+        return switch (extension) {
+            case "pdf" -> startsWith(content, 0x25, 0x50, 0x44, 0x46, 0x2D);
+            case "png" -> startsWith(content, 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A);
+            case "jpg", "jpeg" -> startsWith(content, 0xFF, 0xD8, 0xFF);
+            case "txt" -> containsNoNulByte(content);
+            default -> false;
+        };
+    }
+
+    private boolean startsWith(byte[] content, int... signature) {
+        if (content.length < signature.length) return false;
+        for (int index = 0; index < signature.length; index++) {
+            if ((content[index] & 0xFF) != signature[index]) return false;
+        }
+        return true;
+    }
+
+    private boolean containsNoNulByte(byte[] content) {
+        for (byte value : content) {
+            if (value == 0) return false;
+        }
+        return true;
     }
 
     private String sha256(byte[] content) {

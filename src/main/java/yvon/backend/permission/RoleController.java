@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import yvon.backend.common.api.ApiResponse;
+import yvon.backend.audit.AuditAction;
 
 import java.util.List;
 
@@ -27,12 +28,14 @@ public class RoleController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('role:write') and hasAuthority('data_scope:write')")
+    @AuditAction(resourceType = "ROLE", action = "CREATE")
     public ApiResponse<RoleResponse> create(@Valid @RequestBody RoleCreateRequest request) {
         return ApiResponse.success(roleService.create(request));
     }
 
     @PutMapping("/{roleId}")
     @PreAuthorize("hasAuthority('role:write') and hasAuthority('data_scope:write')")
+    @AuditAction(resourceType = "ROLE", action = "UPDATE")
     public ApiResponse<RoleResponse> update(@PathVariable Long roleId,
                                              @Valid @RequestBody RoleUpdateRequest request) {
         return ApiResponse.success(roleService.update(roleId, request));
