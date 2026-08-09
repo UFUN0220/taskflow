@@ -1,5 +1,13 @@
 # Changelog
 
+## 阶段 5 故障注入与恢复 - 2026-08-09
+
+- 新增 `scripts/fault-injection.ps1`，默认计划模式，只允许对精确的 TaskFlow 容器执行 stop/start，禁止删除卷、清库和 `compose down`。
+- Redis 短暂不可用真实演练通过：会话/Redis 索引期间不可用，恢复后恢复，Flyway V8 和核心计数不变。
+- RabbitMQ 短暂停止/恢复真实演练通过；真实非法消息到 retry/DLQ/replay 因执行审批未完成，不包装为已通过。
+- MinIO 停止期间附件上传真实返回 500，附件元数据进入 FAILED，MinIO 恢复后健康；对象列表扫描未完成。
+- MySQL 停止、backend 重启和浏览器 WebSocket 重连本阶段未复验，项目评分按证据边界调整为 82/100，生产 HA 仍不通过。
+
 ## 阶段 4 性能与可观测性调优 - 2026-08-09
 
 - 为 Dashboard、Login、Management 和 Task 路由增加懒加载；前端构建通过，旧入口 JS 1,156,965 bytes，新最大共享 chunk 747,991 bytes，下降约 35.38%，但仍保留 Vite 500 KB 提示，未声称总传输量下降。

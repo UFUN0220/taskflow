@@ -1,0 +1,43 @@
+{
+  "capturedAt": "2026-08-09T13:07:11.1101201Z",
+  "project": "TaskFlow Platform",
+  "execute": false,
+  "safety": [
+    "Only exact taskflow-platform-* container names were allowed",
+    "Only docker stop/start were used for injection",
+    "No compose down, docker rm, volume deletion or database cleanup was performed"
+  ],
+  "scenarios": [
+    {
+      "scenario": "redis_restart",
+      "status": "planned_requires_-Execute",
+      "before": {
+        "capturedAt": "2026-08-09T13:07:10.2666442Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      }
+    }
+  ],
+  "businessProbeBoundary": "API probes not collected; provide TASKFLOW_FAULT_ACCESS_TOKEN for authenticated checks"
+}

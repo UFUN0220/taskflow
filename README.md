@@ -14,6 +14,8 @@ Stage 17 adds local Kubernetes manifests for the frontend and a two-replica back
 
 Stage 18 adds a security and quality review, hardens audit source-address handling and attachment content validation, and records verified findings and unresolved production risks.
 
+阶段 5 新增非破坏性故障注入脚本和本地证据：Redis、RabbitMQ、MinIO 短暂停止/恢复，以及 MinIO 上传失败后的 FAILED 元数据状态。RabbitMQ 真实非法消息到重试/DLQ/replay、MySQL 本阶段保卷重启和浏览器 WebSocket 重连仍需单独补验；本地单容器恢复不代表生产 HA。
+
 阶段 19 新增基于已验证代码整理的中文面试和简历材料，包括架构图、状态与消息时序图、RBAC 和数据范围说明、50 个项目深挖问题及参考回答、个人贡献边界，以及未经进一步验证不得使用的项目表述。
 
 The backend now includes task draft maintenance, filtered and paginated task queries, primary/collaborator assignment, scoped detail access, batch assignee loading, task operation logs, a fixed task state machine, optimistic concurrency control using old-status-plus-version conditional updates, task comments, MinIO-backed attachment metadata workflows, persistent reminder plans, Redis ZSet scheduling, distributed scanning locks, RabbitMQ reminder publishing, idempotent notification consumers, bounded retries, dead-letter compensation, HTTP notification query APIs, and STOMP over WebSocket user-destination push. Flyway V1 through V8 are designed for a fresh MySQL database.
@@ -22,11 +24,11 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 ## 当前进度
 
-当前阶段 19 已完成登录、Redis 会话标记、后端登出撤销、登录失败限流、前端退出体验、Token 持久化、任务与项目基础流程、评论、附件、通知中心、用户/角色/部门管理、统一错误处理、自动化测试、性能工具、全容器部署、本地 Kubernetes 应用层清单、安全质量审查和基于已验证代码的面试简历材料。阶段 1 已收紧生产 Secret、管理面和基础安全 Header；前端 Token 仍使用 Bearer + 本地存储，生产化前仍需完成 HttpOnly Cookie/CSRF 或等价的严格 XSS 防护方案。
+当前阶段 19 已完成登录、Redis 会话标记、后端登出撤销、登录失败限流、前端退出体验、Token 持久化、任务与项目基础流程、评论、附件、通知中心、用户/角色/部门管理、统一错误处理、自动化测试、性能工具、全容器部署、本地 Kubernetes 应用层清单、安全质量审查、阶段5部分故障恢复演练和基于已验证代码的面试简历材料。阶段 1 已收紧生产 Secret、管理面和基础安全 Header；前端 Token 仍使用 Bearer + 本地存储，生产化前仍需完成 HttpOnly Cookie/CSRF 或等价的严格 XSS 防护方案。
 
 2026-08-09 全面验收结论：项目可在本地 Compose 环境运行和演示；认证撤销、登录限流代码及测试已补齐，阶段 1 后端回归为 66 项执行、0 失败、1 项跳过，前端生产构建和安全配置静态校验通过，真实旧 Token 失效烟测通过。阶段 15 已完成固定本地数据规模下的性能基线与运行时采集，阶段 17 已在 Kind `dev` 集群完成前后端部署、探针、Pod 恢复和滚动重启验证；这些结果均不等同于生产容量或生产高可用。Token localStorage、TLS/WSS、集中式 Secret 管理、在线依赖扫描和完整浏览器 E2E 等生产基线仍不完整，项目暂不判定为生产就绪。详见[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
-参考 PriceSight 项目采用的加权验收方法，本项目阶段 4 后评分建议仍为 **81/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。阶段 4 已完成路由级懒加载、SQL/索引复核和运行时指标扩展，但同参数优化后压测因原管理员凭据不可用而未完成，因此不机械加分；OWASP/NVD 未完成、localStorage、TLS/WSS、集中式密钥管理等未完成项也不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
+参考 PriceSight 项目采用的加权验收方法，本项目阶段 5 后评分建议为 **82/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。阶段 5 真实验证了 Redis、RabbitMQ、MinIO 的部分短故障恢复和 MinIO FAILED 元数据路径，因此有限加分；Rabbit retry/DLQ/replay、MySQL 本阶段重启、浏览器 WebSocket 重连、OWASP/NVD、localStorage、TLS/WSS 和集中式密钥管理等未完成项不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
 
 ## 技术栈
 
@@ -170,6 +172,7 @@ JaCoCo 报告位于 `target/site/jacoco/`。Windows PowerShell 中必须给 `-Dt
 - [阶段 3 浏览器 E2E 验收记录](docs/e2e-browser-report-2026-08-09.md)
 - [阶段 15 性能工具](docs/performance.md)
 - [阶段 4 性能优化对比](docs/performance-comparison-2026-08.md)
+- [阶段 5 故障注入与恢复验收](docs/fault-injection-2026-08-09.md)
 - [阶段 16 Docker Compose 部署](docs/deployment.md)
 - [阶段 17 Kubernetes 本地部署](docs/k8s-local.md)
 - [阶段 18 安全和质量审查](docs/stage18-security-quality.md)

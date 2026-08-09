@@ -1,0 +1,118 @@
+{
+  "capturedAt": "2026-08-09T13:10:09.3380391Z",
+  "project": "TaskFlow Platform",
+  "execute": true,
+  "safety": [
+    "Only exact taskflow-platform-* container names were allowed",
+    "Only docker stop/start were used for injection",
+    "No compose down, docker rm, volume deletion or database cleanup was performed"
+  ],
+  "scenarios": [
+    {
+      "scenario": "rabbitmq_restart",
+      "status": "executed",
+      "target": "taskflow-platform-rabbitmq-1",
+      "before": {
+        "capturedAt": "2026-08-09T13:09:44.9434045Z",
+        "appHealth": 200,
+        "authMe": 200,
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "ok",
+          "flyway": "8",
+          "tasks": "3628",
+          "notifications": "2000",
+          "attachments": "0",
+          "attachment_states": "none"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "during": {
+        "capturedAt": "2026-08-09T13:09:50.6289660Z",
+        "appHealth": 200,
+        "authMe": 200,
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "ok",
+          "flyway": "8",
+          "tasks": "3628",
+          "notifications": "2000",
+          "attachments": "0",
+          "attachment_states": "none"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "unavailable"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "after": {
+        "capturedAt": "2026-08-09T13:10:08.5266389Z",
+        "appHealth": 200,
+        "authMe": 200,
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "ok",
+          "flyway": "8",
+          "tasks": "3628",
+          "notifications": "2000",
+          "attachments": "0",
+          "attachment_states": "none"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "restoredTarget": {
+        "status": "running",
+        "health": "healthy",
+        "running": true
+      },
+      "databaseConsistency": "unchanged_for_observed_counts",
+      "volumeOperation": "none",
+      "productionBoundary": "single local container restart only; not HA or failover evidence"
+    }
+  ],
+  "businessProbeBoundary": "Authenticated /api/auth/me status collected; task mutation and browser WebSocket MESSAGE require separate explicit probe"
+}
