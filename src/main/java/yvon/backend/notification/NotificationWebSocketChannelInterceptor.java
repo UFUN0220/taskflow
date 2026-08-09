@@ -19,11 +19,16 @@ import yvon.backend.auth.AuthSessionService;
 import yvon.backend.auth.UserPrincipal;
 
 import java.util.List;
+import java.security.Principal;
+import java.util.Map;
 
 @Component
 @ConditionalOnProperty(name = {"taskflow.websocket.enabled", "taskflow.auth.enabled"},
         havingValue = "true", matchIfMissing = true)
 public class NotificationWebSocketChannelInterceptor implements ChannelInterceptor {
+
+    private static final String AUTHENTICATED_PRINCIPAL =
+            NotificationWebSocketChannelInterceptor.class.getName() + ".principal";
 
     private final JwtTokenService tokenService;
     private final AuthSessionService sessionService;
@@ -41,12 +46,44 @@ public class NotificationWebSocketChannelInterceptor implements ChannelIntercept
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            accessor.setUser(authenticate(accessor));
-            return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
-        } else if (!StompCommand.DISCONNECT.equals(accessor.getCommand()) && accessor.getUser() == null) {
-            throw new IllegalArgumentException("WebSocket连接未认证");
+            Principal principal = authenticate(accessor);
+            accessor.setUser(principal);
+            storePrincipal(accessor, principal);
+            return authenticatedMessage(message, accessor);
+        } else if (!StompCommand.DISCONNECT.equals(accessor.getCommand())) {
+            Principal principal = accessor.getUser();
+            if (principal == null) {
+                principal = storedPrincipal(accessor);
+                if (principal != null) {
+                    accessor.setUser(principal);
+                    return authenticatedMessage(message, accessor);
+                }
+            }
+            if (principal == null) {
+                throw new IllegalArgumentException("WebSocket连接未认证");
+            }
         }
         return message;
+    }
+
+    private Message<?> authenticatedMessage(Message<?> message, StompHeaderAccessor accessor) {
+        return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
+    }
+
+    private void storePrincipal(StompHeaderAccessor accessor, Principal principal) {
+        Map<String, Object> attributes = accessor.getSessionAttributes();
+        if (attributes != null) {
+            attributes.put(AUTHENTICATED_PRINCIPAL, principal);
+        }
+    }
+
+    private Principal storedPrincipal(StompHeaderAccessor accessor) {
+        Map<String, Object> attributes = accessor.getSessionAttributes();
+        if (attributes == null) {
+            return null;
+        }
+        Object principal = attributes.get(AUTHENTICATED_PRINCIPAL);
+        return principal instanceof Principal value ? value : null;
     }
 
     private UsernamePasswordAuthenticationToken authenticate(StompHeaderAccessor accessor) {

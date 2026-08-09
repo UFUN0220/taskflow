@@ -18,6 +18,7 @@ import yvon.backend.auth.UserPrincipal;
 import yvon.backend.notification.NotificationWebSocketChannelInterceptor;
 
 import java.util.List;
+import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -60,6 +61,33 @@ class NotificationWebSocketChannelInterceptorTest {
         assertThatThrownBy(() -> interceptor.preSend(message, channel))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("WebSocket连接未认证");
+    }
+
+    @Test
+    void restoresAuthenticatedPrincipalForSubscribeFromStompSessionAttributes() {
+        UserPrincipal user = user(11L, "alice");
+        when(userDetailsService.loadUserByUsername("alice")).thenReturn(user);
+        when(sessionService.isActive(any(Claims.class))).thenReturn(true);
+        String token = tokenService.issue(user);
+
+        StompHeaderAccessor connectAccessor = StompHeaderAccessor.create(StompCommand.CONNECT);
+        connectAccessor.addNativeHeader("Authorization", "Bearer " + token);
+        connectAccessor.setSessionId("session-1");
+        connectAccessor.setSessionAttributes(new HashMap<>());
+        Message<?> connect = MessageBuilder.createMessage(new byte[0], connectAccessor.getMessageHeaders());
+        interceptor.preSend(connect, channel);
+
+        StompHeaderAccessor subscribeAccessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        subscribeAccessor.setSessionId("session-1");
+        subscribeAccessor.setDestination("/user/queue/notifications");
+        subscribeAccessor.setSessionAttributes(connectAccessor.getSessionAttributes());
+        Message<?> subscribe = MessageBuilder.createMessage(new byte[0], subscribeAccessor.getMessageHeaders());
+        Message<?> result = interceptor.preSend(subscribe, channel);
+
+        StompHeaderAccessor resultAccessor = MessageHeaderAccessor.getAccessor(result, StompHeaderAccessor.class);
+        assertThat(resultAccessor).isNotNull();
+        assertThat(resultAccessor.getUser()).isNotNull();
+        assertThat(resultAccessor.getUser().getName()).isEqualTo("11");
     }
 
     private Message<?> connect(String authorization) {

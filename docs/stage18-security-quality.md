@@ -10,6 +10,8 @@
 - 保持 Bearer + STOMP CONNECT 的一致性，没有进行不完整的 Cookie 迁移；localStorage 风险仍明确保留；
 - 66 项后端测试执行、0 失败、1 跳过；前端构建、Compose 模板解析、Kustomize 渲染通过；当前运行 Compose 登录、`/api/auth/me`、登出和旧 Token 401 烟测通过。
 
+阶段 2 补充依赖风险可见性：官方 npm registry 的 `npm audit` 实际完成，当前 lockfile 报告 2 个 moderate、0 个 high/critical；OWASP/NVD 扫描已配置但本机超过 5 分钟未完成，未将其写成“漏洞为 0”。
+
 审查范围覆盖认证授权、数据范围、输入校验、SQL 拼接、文件上传、敏感配置、日志、JWT、WebSocket、RabbitMQ 消费、幂等、事务、线程/定时任务、资源关闭、依赖和完整构建测试。
 
 ## 已修复
@@ -59,7 +61,7 @@
 6. 当前 HTTP/WebSocket 仍可使用本地明文连接；生产环境必须使用 TLS/WSS，并正确配置可信反向代理。应用默认不信任转发 Header。
 7. Kubernetes 阶段只部署应用层，中间件仍是 Docker Compose 单实例；本地 `k8s/secret.yaml` 为空值模板，不代表生产 Secret 管理。
 8. 附件没有病毒扫描、压缩炸弹识别、图像重编码或内容安全服务；当前仅允许受限类型并限制大小。
-9. 尚未执行基于在线漏洞数据库的完整 `npm audit`/OWASP 依赖扫描；当前只完成 Maven 依赖静态分析和已有构建测试。
+9. npm audit 已在官方 registry 实际执行并记录 2 个 moderate advisory；OWASP/NVD 依赖扫描仍受本机数据库更新时间/网络限制未完成，不能据此宣称 Maven 依赖为零风险。
 
 ## 不适合生产使用的部分
 

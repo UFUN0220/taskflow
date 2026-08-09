@@ -26,6 +26,8 @@
 
 其余服务测试位于同一测试源集，覆盖角色、数据范围、任务、评论、附件、提醒、通知、审计和健康检查等模块。
 
+阶段 3 增加前端 Playwright 浏览器回归入口：`npm run e2e`。它使用运行编号创建隔离测试用户/任务，并在失败时保留截图、视频或 trace；当前 9 场景的实际结果和 WebSocket 证据不计为全通过，详见 [`docs/e2e-browser-report-2026-08-09.md`](e2e-browser-report-2026-08-09.md)。
+
 ## 执行命令
 
 默认回归测试不要求 Docker：
@@ -46,7 +48,7 @@
 .\mvnw.cmd --% -Dtaskflow.integration=true -Dtest=Stage14ContainerEnvironmentTest test
 ```
 
-历史默认验证结果曾记录为 57 项；认证会话和限流修复后，本次完整回归重新执行为：64 项测试执行，0 失败，1 项跳过。跳过项是显式集成测试。
+历史默认验证结果曾记录为 57 项；认证会话、限流和阶段 1/2 治理变更后，本次完整回归为：66 项测试执行，0 失败，1 项跳过。跳过项是显式集成测试；CI 通过 `-Dtaskflow.integration=true` 显式触发它。
 
 ## 未覆盖与环境说明
 

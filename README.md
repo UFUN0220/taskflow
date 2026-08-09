@@ -26,7 +26,7 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 2026-08-09 全面验收结论：项目可在本地 Compose 环境运行和演示；认证撤销、登录限流代码及测试已补齐，阶段 1 后端回归为 66 项执行、0 失败、1 项跳过，前端生产构建和安全配置静态校验通过，真实旧 Token 失效烟测通过。阶段 15 已完成固定本地数据规模下的性能基线与运行时采集，阶段 17 已在 Kind `dev` 集群完成前后端部署、探针、Pod 恢复和滚动重启验证；这些结果均不等同于生产容量或生产高可用。Token localStorage、TLS/WSS、集中式 Secret 管理、在线依赖扫描和完整浏览器 E2E 等生产基线仍不完整，项目暂不判定为生产就绪。详见[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
-参考 PriceSight 项目采用的加权验收方法，本项目阶段 1 后评分建议为 **80/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。安全与数据保护维度由 66 调整为 73，依据是已完成并测试的生产配置 fail-fast、管理面收紧、Header 基线和 Secret 模板治理；localStorage、TLS/WSS、集中式密钥管理等未完成项不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
+参考 PriceSight 项目采用的加权验收方法，本项目阶段 2 后评分建议为 **81/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。阶段 2 将后端覆盖率、Testcontainers CI 触发、前端 typecheck/build 和依赖风险可见性纳入门禁；OWASP/NVD 未完成、localStorage、TLS/WSS、集中式密钥管理等未完成项不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
 
 ## 技术栈
 
@@ -124,9 +124,30 @@ npm run dev
 
 ```powershell
 .\mvnw.cmd test
-Set-Location frontend; npm run build
-Set-Location ..; docker compose config --quiet
+Set-Location frontend
+npm run typecheck
+npm run build
+$env:E2E_BASE_URL = "http://127.0.0.1:5173"
+$env:E2E_ADMIN_PASSWORD = "<通过安全方式注入的本地管理员密码>"
+$env:E2E_TEST_USER_PASSWORD = "<本次运行专用测试密码>"
+npm run e2e
+$env:npm_config_registry = "https://registry.npmjs.org"
+npm run audit:ci
+Set-Location ..
+docker compose config --quiet
+F:\newinstall\kubectl.exe kustomize k8s
 ```
+
+覆盖率和集成门禁：
+
+```powershell
+.\mvnw.cmd verify
+.\mvnw.cmd "-Dtaskflow.integration=true" verify
+```
+
+JaCoCo 报告位于 `target/site/jacoco/`。Windows PowerShell 中必须给 `-Dtaskflow.integration=true` 加引号，避免被 Maven 误解析为 `.integration=true` 生命周期阶段。GitHub Actions 分为 `fast-check` 和 `integration-security`：前者阻断快速回归、前端构建及 Compose/Kustomize 静态错误；后者执行 Testcontainers 和覆盖率，npm/OWASP 在线扫描暂为 advisory，并明确记录网络或数据库不可用。
+
+浏览器 E2E 使用 Playwright，覆盖登录、401/403、任务真实写入、重复提交保护、登出失效、附件入口和通知中心。测试密码只通过当前终端环境变量注入，不写入仓库；失败时 Playwright 在 `frontend/test-results/` 保留截图、视频或 trace。当前阶段的真实执行结果和 WebSocket 证据见[浏览器 E2E 验收记录](docs/e2e-browser-report-2026-08-09.md)，未通过的场景不会被包装成生产结论。
 
 ## 文档
 
@@ -146,10 +167,12 @@ Set-Location ..; docker compose config --quiet
 - [阶段 12 审计日志和可观测性](docs/stage12-audit-observability.md)
 - [阶段 13 前端基础功能](docs/stage13-frontend.md)
 - [阶段 14 自动化测试](docs/stage14-testing.md)
+- [阶段 3 浏览器 E2E 验收记录](docs/e2e-browser-report-2026-08-09.md)
 - [阶段 15 性能工具](docs/performance.md)
 - [阶段 16 Docker Compose 部署](docs/deployment.md)
 - [阶段 17 Kubernetes 本地部署](docs/k8s-local.md)
 - [阶段 18 安全和质量审查](docs/stage18-security-quality.md)
+- [阶段 2 依赖安全与质量门禁记录](docs/dependency-security-report.md)
 - [阶段 19 面试和简历材料](docs/stage19-interview-materials.md)
 - [项目全面验收与高维度评估报告（2026-08-09）](docs/project-acceptance-report-2026-08-09.md)
 - [项目级加权评分（2026-08-09）](docs/project-acceptance-score-2026-08-09.json)

@@ -48,7 +48,10 @@ export default function NotificationCenter() {
         setNotifications((current) => mergeNotifications(current, notification))
         if (notification.status === 'UNREAD') setUnreadCount((count) => count + 1)
       },
-      setStatus,
+      (nextStatus) => {
+        setStatus(nextStatus)
+        if (nextStatus === 'CONNECTED') void loadUnread()
+      },
     )
     client.connect()
     return () => client.disconnect()

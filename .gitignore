@@ -22,6 +22,8 @@ secrets/
 # Frontend build output and dependencies
 frontend/node_modules/
 frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
 
 ### STS ###
 .apt_generated

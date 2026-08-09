@@ -24,6 +24,8 @@ Authorization:Bearer <JWT>
 /user/queue/notifications
 ```
 
+实现上，CONNECT 通过 JWT 和 Redis 活动会话校验后，认证 Principal 同时绑定到 STOMP 会话属性；后续 SUBSCRIBE/消息帧会恢复该 Principal，避免只在 CONNECT 消息上设置身份导致真实浏览器订阅被拒绝。
+
 服务端使用 `convertAndSendToUser(userId, "/queue/notifications", payload)` 推送。用户目的地由服务端认证 Principal 解析，不能由前端传入的 `userId` 决定。
 
 ## 多设备和断开清理

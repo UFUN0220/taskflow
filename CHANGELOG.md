@@ -1,7 +1,12 @@
 # Changelog
 
+## 阶段 3 浏览器 E2E - 2026-08-09
+
+- 新增 Playwright 9 场景、运行编号隔离夹具、失败截图/视频/trace 保留和真实 STOMP 浏览器观测；修正登录完成等待、Modal 提交定位、标题隔离，并让 WebSocket 后续 STOMP 帧恢复 CONNECT 认证 Principal。当前 Compose 浏览器实测为 4/9 通过，真实订阅仍待修复后复验，详见 `docs/e2e-browser-report-2026-08-09.md`。
+
 ## 认证遗留问题修复 - 2026-08-09
 
+- 2026-08-09 阶段 2 工程治理：新增 JaCoCo HTML/XML 报告和 bundle/核心类覆盖率门禁，新增 fast-check 与 integration-security GitHub Actions，纳入 Testcontainers、Compose/Kustomize 静态校验、npm audit 和 OWASP Dependency-Check；真实扫描结果与网络/NVD 超时边界记录在 `docs/dependency-security-report.md`。
 - 2026-08-09 阶段 1 安全基线收敛：按 dev/test/prod 分离敏感配置，生产缺失/弱 Secret fail-fast，收紧 prod Actuator/OpenAPI，增加 Spring Security/Nginx 基础安全 Header，明确不信任任意转发 Header，并将 `.env.example`/Kubernetes Secret 模板改为空值安全模板；保留 Bearer + STOMP 一致性，localStorage、TLS/WSS 和集中式密钥管理仍列为生产遗留风险。
 - 参考 PriceSight 项目级加权验收范式，新增 TaskFlow 100 分制综合评估：79/100；本地工程基线有条件通过，生产发布不通过。评分维度覆盖需求核心、架构、安全、测试、评估可信度、运行集成、工程治理和文档交付。
 - 新增 `docs/project-acceptance-score-2026-08-09.json` 机器可读评分结果，并将 P0/P1/P2 生产门禁、权重、证据和分层交付判定同步到全面验收报告。

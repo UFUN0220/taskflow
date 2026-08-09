@@ -20,4 +20,4 @@
 
 ## 验证
 
-`npm run build` 已通过。真实页面联调需要后端启用认证、准备数据库和初始化账号；WebSocket、附件和通知还需要对应的运行中基础设施。
+`npm run build` 已通过。阶段 3 新增 `npm run e2e` Playwright 浏览器套件，覆盖登录、401/403、任务写入、重复提交、登出、附件和通知中心；当前报告记录了真实 Compose 浏览器运行的 4/9 通过结果，WebSocket 订阅失败证据和未完成项见 [`docs/e2e-browser-report-2026-08-09.md`](e2e-browser-report-2026-08-09.md)。
