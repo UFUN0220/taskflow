@@ -22,7 +22,9 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 ## 当前进度
 
-当前阶段 19 已完成登录/退出、Token 持久化、任务与项目基础流程、评论、附件、通知中心、用户/角色/部门管理、统一错误处理、自动化测试、性能工具、全容器部署、本地 Kubernetes 应用层清单、安全质量审查和基于已验证代码的面试简历材料。
+当前阶段 19 已完成登录、Redis 会话标记、后端登出撤销、登录失败限流、前端退出体验、Token 持久化、任务与项目基础流程、评论、附件、通知中心、用户/角色/部门管理、统一错误处理、自动化测试、性能工具、全容器部署、本地 Kubernetes 应用层清单、安全质量审查和基于已验证代码的面试简历材料。前端 Token 仍使用本地存储，生产化前需继续评估 HttpOnly Cookie、CSRF 和 CSP。
+
+2026-08-09 全面验收结论：项目可在本地 Compose 环境运行和演示；认证撤销、登录限流代码及测试已补齐，默认后端回归为 64 项通过，显式阶段 14 Testcontainers 基础设施测试通过，真实旧 Token 失效和限流烟测通过。Kubernetes 实机证据、Token 存储生产化和密钥/TLS 基线仍不完整，项目暂不判定为生产就绪。详见[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
 ## 技术栈
 
@@ -84,7 +86,9 @@ npm run dev
 
 本地模式下 Vite 将 `/api` 和 `/ws` 代理到宿主机 `localhost:8080`。仅启动基础设施时可执行 `docker compose up -d mysql redis rabbitmq minio`。
 
-Maven 用户目录已迁移到 `F:\projects_2027\taskflow-platform\maven-user`，包含 `settings.xml`、Wrapper 发行版和本地仓库。新的 PowerShell 或 IDE 会话会通过用户环境变量 `MAVEN_USER_HOME`、`MAVEN_ARGS` 和 `JAVA_HOME` 自动使用该目录；迁移后请重新打开终端或 IDE。
+本项目工具缓存统一放在 F 盘：Maven 用户目录为 `F:\newinstall\maven-user`、本地仓库为 `F:\newinstall\maven-repository`，Gradle 用户目录为 `F:\newinstall\gradle-user-home`，npm 缓存为 `F:\newinstall\npm-cache`。项目 `.mvn/maven.config` 会把 Maven 本地仓库固定到 F 盘；新的 PowerShell 或 IDE 会话通过 `MAVEN_USER_HOME`、`MAVEN_ARGS`、`GRADLE_USER_HOME`、`NPM_CONFIG_CACHE` 和 `JAVA_HOME` 使用这些目录，迁移后请重新打开终端或 IDE。
+
+Testcontainers 配置位于项目内 `src/test/resources/testcontainers.properties`，不依赖用户目录下的 C 盘配置；Docker Desktop 本体配置仍由 Docker 管理，未迁移其必要的 `.docker` 用户目录。
 
 健康检查：<http://localhost:8080/api/health> 或 <http://localhost:8080/actuator/health>。
 
@@ -143,6 +147,7 @@ Set-Location ..; docker compose config --quiet
 - [阶段 17 Kubernetes 本地部署](docs/k8s-local.md)
 - [阶段 18 安全和质量审查](docs/stage18-security-quality.md)
 - [阶段 19 面试和简历材料](docs/stage19-interview-materials.md)
+- [项目全面验收与高维度评估报告（2026-08-09）](docs/project-acceptance-report-2026-08-09.md)
 - [任务状态机](docs/task-state-machine.md)
 - [消息与提醒边界](docs/message-flow.md)
 - [测试说明](docs/testing.md)

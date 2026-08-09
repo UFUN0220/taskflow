@@ -1,6 +1,7 @@
 package yvon.backend;
 
 import org.junit.jupiter.api.Test;
+import io.jsonwebtoken.Claims;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -10,6 +11,7 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import yvon.backend.auth.AuthProperties;
+import yvon.backend.auth.AuthSessionService;
 import yvon.backend.auth.JwtTokenService;
 import yvon.backend.auth.SysUserEntity;
 import yvon.backend.auth.UserPrincipal;
@@ -21,20 +23,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 class NotificationWebSocketChannelInterceptorTest {
 
     private final UserDetailsService userDetailsService = mock(UserDetailsService.class);
     private final AuthProperties properties = properties();
     private final JwtTokenService tokenService = new JwtTokenService(properties);
+    private final AuthSessionService sessionService = mock(AuthSessionService.class);
     private final NotificationWebSocketChannelInterceptor interceptor =
-            new NotificationWebSocketChannelInterceptor(tokenService, userDetailsService);
+            new NotificationWebSocketChannelInterceptor(tokenService, sessionService, userDetailsService);
     private final MessageChannel channel = mock(MessageChannel.class);
 
     @Test
     void acceptsJwtUidWhenParserReturnsDifferentNumberImplementation() {
         UserPrincipal user = user(11L, "alice");
         when(userDetailsService.loadUserByUsername("alice")).thenReturn(user);
+        when(sessionService.isActive(any(Claims.class))).thenReturn(true);
         String token = tokenService.issue(user);
 
         Message<?> message = connect("Bearer " + token);

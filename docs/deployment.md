@@ -39,13 +39,24 @@ docker compose ps
 
 ## Maven 用户目录
 
-Maven 用户配置已迁移到 `F:\projects_2027\taskflow-platform\maven-user`，其中：
+Maven 用户配置已迁移到 `F:\newinstall\maven-user`，本地仓库位于 `F:\newinstall\maven-repository`，其中：
 
 - `settings.xml` 指定 F 盘本地仓库；
 - `wrapper` 保存 Maven Wrapper 发行版；
 - `repository` 保存项目依赖缓存。
 
 当前用户环境变量已设置为：`MAVEN_USER_HOME` 指向该目录，`MAVEN_ARGS` 指向 `settings.xml`，`JAVA_HOME` 指向 `F:\JDK17`。环境变量对新启动的终端生效，旧终端需要重新打开。
+
+## 工具缓存位置
+
+本项目不在 C 盘保存非必要的项目工具缓存：
+
+- Gradle：`F:\newinstall\gradle-user-home`；Gradle 安装目录位于 `F:\newinstall`；
+- npm：`F:\newinstall\npm-cache`；
+- Testcontainers：项目内 `src/test/resources/testcontainers.properties`；
+- Maven：由项目 `.mvn/maven.config` 固定到 `F:\newinstall\maven-repository`。
+
+Docker Desktop 的运行时和必要用户配置由 Docker 管理，未对 Docker 数据目录或卷做迁移、删除操作。
 
 ## Flyway 数据库初始化
 
@@ -56,3 +67,11 @@ Maven 用户配置已迁移到 `F:\projects_2027\taskflow-platform\maven-user`�
 后端默认监听 8080，前端开发服务器监听 5173。使用 `npm run dev` 时，Vite 将 `/api` 和 `/ws` 代理到宿主机后端；使用 Compose 时，前端由 Nginx 提供静态文件和同源代理。
 
 如果需要本地数据库连接，复制 `src/main/resources/application-local.yml.example` 为 `application-local.yml` 并修改凭据；该文件已被 Git 忽略。
+
+## 2026-08-09 全面验收记录
+
+本次验收使用现有 Compose 编排启动六个服务，最终 backend、frontend、mysql、redis、rabbitmq、minio 均为 `healthy`。后端健康接口、前端入口、管理员登录、当前用户、任务列表以及未授权/非法 Token 拒绝均通过；Flyway 最新版本为 V8。
+
+随后执行了保留数据卷的 `docker compose restart`。重启前后 Flyway 版本保持 V8，后端恢复健康并可以再次登录。该结果只证明当前本地 Compose 拓扑的重启恢复，不代表 Kubernetes 实机恢复或生产级高可用。
+
+认证遗留修复后，后端镜像增加了 Redis 活动会话、后端登出撤销和登录失败窗口限流，并已重新完成 Docker 编译；真实“登出后旧 Token 返回 401”烟测和 10 次/60 秒限流烟测均已通过。

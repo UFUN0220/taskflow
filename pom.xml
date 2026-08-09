@@ -30,7 +30,7 @@
         <java.version>17</java.version>
         <jjwt.version>0.12.6</jjwt.version>
         <minio.version>8.6.0</minio.version>
-        <testcontainers.version>1.20.6</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
     <dependencies>
         <dependency>

@@ -7,6 +7,7 @@ public enum BusinessErrorCode {
     FORBIDDEN("COMMON_403", "无权限"),
     RESOURCE_NOT_FOUND("COMMON_404", "资源不存在"),
     CONFLICT("COMMON_409", "资源状态冲突"),
+    RATE_LIMITED("COMMON_429", "请求过于频繁，请稍后重试"),
     BUSINESS_ERROR("BUSINESS_400", "业务处理失败"),
     INTERNAL_ERROR("COMMON_500", "系统内部错误");
 

@@ -54,6 +54,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, token 
 }
 
 export const login = (loginName: string, password: string) => apiRequest<LoginResult>('/api/auth/login', { method: 'POST', body: JSON.stringify({ login: loginName, password }) }, null)
+export const logout = () => apiRequest<null>('/api/auth/logout', { method: 'POST' })
 export const currentUser = () => apiRequest<CurrentUser>('/api/auth/me')
 
 export async function listTasks(params: Record<string, string | number | undefined>) {

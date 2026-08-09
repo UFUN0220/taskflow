@@ -32,7 +32,7 @@
 | 文件上传 | 已加强 | 限制大小、后缀、MIME 和内容签名；仍不是恶意文件扫描 |
 | 敏感配置 | 高风险遗留 | `.env.example`、Compose 默认回退值和本地 Kubernetes Secret 模板包含开发凭据/占位值，不适合共享或生产环境 |
 | 日志泄密 | 未发现密码/完整 Token 输出 | 日志主要记录 trace、资源 ID、消息 ID 和异常类型；全量异常堆栈仍需结合生产日志策略审查 |
-| Token 安全 | 部分通过 | JWT 有签名、过期时间并重新加载当前用户；前端 Token 存在 `localStorage`，存在 XSS 后被读取的风险 |
+| Token 安全 | 部分通过 | JWT 有签名、过期时间、唯一 jti 和 Redis 活动会话撤销；Compose 旧 Token 失效烟测通过；前端 Token 仍存在 `localStorage`，存在 XSS 后被读取的风险 |
 | 消息重复 | 通过当前范围 | 通知按 `source_message_id` 幂等，消费失败有有限重试和死信记录 |
 | 事务边界 | 通过当前范围 | 核心业务写操作有 `@Transactional`；MinIO 网络调用采用补偿状态，不把长时间对象存储调用包在数据库事务中 |
 | 线程池 | 未发现自建无限线程池 | 使用 Spring 调度和 RabbitMQ listener；生产环境仍应显式核对并发、队列容量和关闭策略 |
@@ -41,10 +41,10 @@
 
 ## 未解决风险
 
-1. 登录接口没有基于 Redis 的失败次数限制、IP/账号限流或验证码策略，公开部署会增加密码猜测风险。
+1. 登录接口现已增加基于 Redis 的账号 + 来源地址失败窗口限制，默认 10 次/60 秒；本地烟测已验证第 11 次返回 429，仍需在真实攻击流量和代理网络边界下验证阈值、可信来源地址和验证码升级策略。
 2. 前端访问令牌使用 `localStorage`，应评估迁移到 HttpOnly、Secure、SameSite Cookie 或更严格的 CSP。
 3. 默认 JWT Secret、MySQL/RabbitMQ/MinIO 开发凭据仍存在本地模板和 Compose 回退配置中；这些值只能用于个人本地学习环境。
-4. JWT 没有主动撤销或黑名单机制；用户被禁用后旧 Token 会因重新加载用户状态而失效，但正常退出不会立即撤销已签发 Token。
+4. JWT 已通过 Redis 活动会话标记支持主动撤销；用户被禁用、会话过期或主动退出后，HTTP 和 WebSocket 鉴权均会拒绝旧会话。真实 Compose 旧 Token 失效烟测已通过。
 5. Swagger/OpenAPI 和 Actuator 指标的访问策略仍偏向开发便利，生产环境应关闭或使用专用权限和内网入口。
 6. 当前 HTTP/WebSocket 为本地明文连接；生产环境必须使用 TLS/WSS，并正确配置可信反向代理。
 7. Kubernetes 阶段只部署应用层，中间件仍是 Docker Compose 单实例；本地 `k8s/secret.yaml` 是明文模板，不代表生产 Secret 管理。
@@ -54,7 +54,7 @@
 ## 不适合生产使用的部分
 
 - Compose/Kubernetes 清单中的开发凭据、默认 Secret 和本地端口暴露；
-- 未配置 TLS、登录限流、集中式 Secret 管理和 Token 撤销；
+- 未配置 TLS、集中式 Secret 管理和生产级 Token 存储策略；登录限流和 Token 撤销已实现本地代码路径，但仍需生产环境验证；
 - MySQL、Redis、RabbitMQ、MinIO 单实例；
 - 本地 Kubernetes Secret 明文模板；
 - Actuator/Swagger 的开发型暴露策略；
@@ -62,18 +62,17 @@
 
 ## 验证结果
 
-- `./mvnw.cmd test`：58 项通过，1 项可选容器测试跳过；
+- 最新 `./mvnw.cmd test`：64 项通过，1 项可选 Testcontainers 测试按默认配置跳过；显式阶段 14 Testcontainers 测试已通过 1 项，并完成 8 条 Flyway 迁移。
 - `npm run build`：通过；存在既有的单 JS chunk 大于 500KB 警告；
 - `docker compose config --quiet`：通过；
-- 后端镜像重建：通过；
+- 后端镜像重建：通过，包含 Redis 会话、登出和限流代码；
 - Compose 后端容器健康检查：通过；
 - `GET http://localhost:8080/api/health`：HTTP 200；
-- 未删除数据库、Docker 卷、现有账号或用户文件。
+- 未删除数据库、Docker 卷、现有账号或用户文件；真实登录-登出-旧 Token 失效和 10 次/60 秒限流烟测已通过。
 
 ## 下一步建议
 
-1. 接入 Redis 登录限流和失败锁定，并增加认证安全测试；
-2. 将 JWT 迁移到 HttpOnly Cookie 或建立严格 CSP/XSS 防护基线；
+1. 将 JWT 迁移到 HttpOnly Cookie 或建立严格 CSP/XSS 防护基线；
 3. 使用 Secret Manager/Sealed Secrets/Vault，移除 Compose 生产回退凭据；
 4. 为 Actuator 和 OpenAPI 增加专用观测权限或内网访问策略；
 5. 在有网络和审批的环境执行 npm/Maven/OWASP 依赖漏洞扫描；

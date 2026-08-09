@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import yvon.backend.auth.JwtTokenService;
+import yvon.backend.auth.AuthSessionService;
 import yvon.backend.auth.UserPrincipal;
 
 import java.util.List;
@@ -25,11 +26,14 @@ import java.util.List;
 public class NotificationWebSocketChannelInterceptor implements ChannelInterceptor {
 
     private final JwtTokenService tokenService;
+    private final AuthSessionService sessionService;
     private final UserDetailsService userDetailsService;
 
     public NotificationWebSocketChannelInterceptor(JwtTokenService tokenService,
+                                                   AuthSessionService sessionService,
                                                    UserDetailsService userDetailsService) {
         this.tokenService = tokenService;
+        this.sessionService = sessionService;
         this.userDetailsService = userDetailsService;
     }
 
@@ -56,6 +60,9 @@ public class NotificationWebSocketChannelInterceptor implements ChannelIntercept
         }
         try {
             Claims claims = tokenService.parse(token);
+            if (!sessionService.isActive(claims)) {
+                throw new IllegalArgumentException("WebSocket会话已失效");
+            }
             UserDetails details = userDetailsService.loadUserByUsername(claims.getSubject());
             Number tokenUserId = claims.get("uid", Number.class);
             if (!(details instanceof UserPrincipal principal)

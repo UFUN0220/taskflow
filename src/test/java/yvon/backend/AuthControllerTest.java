@@ -10,8 +10,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import yvon.backend.auth.AuthController;
 import yvon.backend.auth.ApiSecurityResponseWriter;
+import yvon.backend.auth.AuthSessionService;
+import yvon.backend.auth.AuthRateLimiter;
 import yvon.backend.auth.JwtTokenService;
 import yvon.backend.auth.SysUserMapper;
 import yvon.backend.auth.UserPrincipal;
@@ -42,6 +45,12 @@ class AuthControllerTest {
     private JwtTokenService tokenService;
 
     @MockBean
+    private AuthSessionService sessionService;
+
+    @MockBean
+    private AuthRateLimiter rateLimiter;
+
+    @MockBean
     private SysUserMapper userMapper;
 
     @MockBean
@@ -69,6 +78,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.code").value("0"))
                 .andExpect(jsonPath("$.data.accessToken").value("jwt-test-token"))
                 .andExpect(jsonPath("$.data.userId").value(3));
+
+        org.mockito.Mockito.verify(sessionService).register("jwt-test-token");
     }
 
     @Test
@@ -83,5 +94,17 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.code").value("COMMON_401"));
 
         org.mockito.Mockito.verifyNoInteractions(tokenService);
+        org.mockito.Mockito.verify(rateLimiter).recordFailure(any(), org.mockito.ArgumentMatchers.eq("admin"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin")
+    void logoutRevokesThePresentedToken() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .header("Authorization", "Bearer jwt-test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("0"));
+
+        org.mockito.Mockito.verify(sessionService).revoke("jwt-test-token");
     }
 }

@@ -33,6 +33,7 @@ class JwtTokenServiceTest {
 
         assertThat(tokenService.parse(token).getSubject()).isEqualTo("bob");
         assertThat(tokenService.parse(token).get("uid", Number.class).longValue()).isEqualTo(11L);
+        assertThat(tokenService.parse(token).getId()).isNotBlank();
         assertThat(tokenService.expiresInSeconds()).isEqualTo(1800);
     }
 

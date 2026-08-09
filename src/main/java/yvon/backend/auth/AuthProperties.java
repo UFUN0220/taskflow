@@ -18,6 +18,14 @@ public class AuthProperties {
     @Min(1)
     private long jwtExpirationMinutes = 120;
 
+    private boolean loginRateLimitEnabled = true;
+
+    @Min(1)
+    private int loginRateLimitMaxAttempts = 10;
+
+    @Min(1)
+    private long loginRateLimitWindowSeconds = 60;
+
     @Valid
     private final BootstrapAdmin bootstrapAdmin = new BootstrapAdmin();
 
@@ -35,6 +43,30 @@ public class AuthProperties {
 
     public void setJwtExpirationMinutes(long jwtExpirationMinutes) {
         this.jwtExpirationMinutes = jwtExpirationMinutes;
+    }
+
+    public boolean isLoginRateLimitEnabled() {
+        return loginRateLimitEnabled;
+    }
+
+    public void setLoginRateLimitEnabled(boolean loginRateLimitEnabled) {
+        this.loginRateLimitEnabled = loginRateLimitEnabled;
+    }
+
+    public int getLoginRateLimitMaxAttempts() {
+        return loginRateLimitMaxAttempts;
+    }
+
+    public void setLoginRateLimitMaxAttempts(int loginRateLimitMaxAttempts) {
+        this.loginRateLimitMaxAttempts = loginRateLimitMaxAttempts;
+    }
+
+    public long getLoginRateLimitWindowSeconds() {
+        return loginRateLimitWindowSeconds;
+    }
+
+    public void setLoginRateLimitWindowSeconds(long loginRateLimitWindowSeconds) {
+        this.loginRateLimitWindowSeconds = loginRateLimitWindowSeconds;
     }
 
     public BootstrapAdmin getBootstrapAdmin() {

@@ -17,7 +17,7 @@
 3. 将提醒计划、通知事实和实时推送拆分：`reminder_plan` 保存持久计划，Redis 仅作为调度索引，RabbitMQ 负责异步投递，`notification` 负责用户查询；Redis 索引丢失时通过数据库重建。
 4. 为 RabbitMQ 消费者设计按消息 ID 的幂等处理、有限重试和死信补偿，使用 publisher confirm、mandatory returns、手动 Ack 和 traceId/messageId 传递，避免无限重试和重复通知。
 5. 使用 Spring Security 方法级权限和服务层数据范围双重保护资源访问；数据范围支持 SELF、DEPARTMENT、DEPARTMENT_AND_CHILDREN、PROJECT、ALL，并由后端根据当前用户身份推导过滤条件。
-6. 完成 Docker Compose 六服务运行验证以及后端/前端构建验证；当前默认 Maven 测试结果为 58 项通过、1 项可选容器测试跳过，未虚构接口性能、生产并发或 Kubernetes 实际恢复指标。
+6. 完成 Docker Compose 六服务运行验证以及后端/前端构建验证；当前默认 Maven 测试结果为 64 项通过、1 项可选容器测试因 Docker Desktop API 连接异常跳过，未虚构接口性能、生产并发或 Kubernetes 实际恢复指标。
 
 ## 三、30 秒项目介绍
 
@@ -192,7 +192,7 @@ Redis 只承担调度索引；索引丢失后由数据库计划重建。消息�
 
 11. **登录密码如何保存？**  使用 Spring Security 的 BCryptPasswordEncoder 保存密码哈希，不在 Flyway 中写入明文密码。
 12. **JWT 中保存了什么？**  保存 subject、用户 ID、签发时间和过期时间；每次请求还会按 subject 查询当前用户和权限，避免只依赖 Token 内的旧权限。
-13. **禁用用户后旧 Token 还能用吗？**  正常请求会重新加载当前用户，禁用或锁定状态会阻止认证；但当前没有 Token 黑名单，正常退出不能立即撤销已经签发的 Token。
+13. **禁用用户或退出后旧 Token 还能用吗？**  正常请求会重新加载当前用户，禁用或锁定状态会阻止认证；每个 JWT 还有 Redis 活动会话标记，正常退出删除该标记后，旧 Token 会立即被 HTTP 和 WebSocket 鉴权拒绝。
 14. **为什么使用方法级 `@PreAuthorize`？**  它把功能权限放在具体操作入口，能够区分读、写、状态操作和死信补偿；Service 仍需再次做资源和数据范围校验。
 15. **前端隐藏按钮能否算权限控制？**  不能。前端隐藏只是体验优化，真正的权限由后端 Security 和 Service 执行。
 16. **如何避免用户通过传入其他 userId 越权？**  当前用户身份从认证 Principal 获取，任务负责人、项目成员、通知归属和附件任务关系都在服务层重新查询校验。
@@ -229,15 +229,15 @@ Redis 只承担调度索引；索引丢失后由数据库计划重建。消息�
 
 ### 测试、部署与项目真实性
 
-41. **当前测试结果是什么？**  默认 Maven 测试为 58 项通过、1 项可选 Testcontainers 测试跳过；前端 `npm run build` 通过，Compose 配置和后端运行时健康检查也通过。
-42. **为什么有一个测试跳过？**  它依赖可选的容器集成环境；默认测试保持 Docker 独立，集成测试需要显式打开对应参数。
+41. **当前测试结果是什么？**  默认 Maven 测试为 64 项通过、1 项可选 Testcontainers 测试按默认配置跳过；显式阶段 14 Testcontainers 测试已通过 1 项并完成 8 条 Flyway 迁移。前端 `npm run build`、Compose 配置和后端运行时健康检查也通过，真实 Compose 认证登出和限流烟测通过。
+42. **为什么默认有一个测试跳过？**  它依赖可选的容器集成环境；默认测试保持 Docker 独立，集成测试需要显式打开对应参数。本机显式执行已验证通过。
 43. **Compose 部署包含哪些服务？**  MySQL、Redis、RabbitMQ、MinIO、Spring Boot 后端和 Nginx 前端，共六个服务；当前本地验证均为 healthy。
 44. **Kubernetes 阶段验证到什么程度？**  已完成 Namespace、ConfigMap、Secret、Deployment、Service、探针和资源配置的 Kustomize 渲染；当前 context 未认证，未宣称真实 Pod 部署和自动恢复验证。
 45. **如何验证 Pod 自动恢复？**  在已认证的本地集群中删除后端 Pod，观察 Deployment 重新创建 Pod、readiness 通过后才加入 Service Endpoints，再执行 rollout status。
 46. **项目有没有真实 QPS 或延迟指标？**  没有可直接写入简历的固定指标；项目提供压测和运行时采集工具，但真实数字必须在指定机器和数据规模下重新测量。
 47. **依赖分析有没有问题？**  Maven dependency:analyze 成功，但由于 Spring Boot 传递依赖和测试依赖报告了静态分析警告；没有仅凭警告删除运行时依赖。
 48. **阶段18修复了什么？**  审计地址不再直接信任 X-Forwarded-For，附件增加内容签名校验，并移除文档中的可复制管理员密码。
-49. **项目哪些部分不能说成生产能力？**  默认开发凭据、单实例中间件、未完成 TLS/登录限流/集中密钥管理、未验证的 Kubernetes 自动恢复和未执行的在线漏洞扫描都不能说成生产能力。
+49. **项目哪些部分不能说成生产能力？**  默认开发凭据、单实例中间件、未完成 TLS/集中密钥管理、未验证的 Kubernetes 自动恢复和未执行的在线漏洞扫描都不能说成生产能力；登录限流已在本地 Compose 烟测验证，但不等同于生产安全基线。
 50. **如何证明不是夸大个人贡献？**  按模块和提交证据说明“我实现/我参与/团队完成”的边界，能够指向具体类、测试和验证命令；无法证明的架构、指标和生产结果明确标注未验证。
 
 ## 十二、项目中最困难的 5 个问题
@@ -254,7 +254,7 @@ Redis 只承担调度索引；索引丢失后由数据库计划重建。消息�
 
 - Java 17；Spring Boot 3.4.8；
 - Flyway 迁移 V1–V8；
-- 默认 Maven 测试 58 项通过、1 项可选集成测试跳过；
+- 默认 Maven 测试 64 项通过、1 项可选集成测试因 Docker Desktop API 连接异常跳过；
 - Docker Compose 本地验证 6 个服务健康；
 - 后端 Kubernetes Deployment 清单目标副本数为 2，但未完成真实集群运行验证；
 - RabbitMQ 消费失败最多 3 次后进入死信；

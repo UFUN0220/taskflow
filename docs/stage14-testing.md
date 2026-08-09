@@ -46,10 +46,12 @@
 .\mvnw.cmd --% -Dtaskflow.integration=true -Dtest=Stage14ContainerEnvironmentTest test
 ```
 
-当前默认验证结果：57 项测试执行，0 失败，1 项跳过。跳过项是显式集成测试，未设置 `taskflow.integration` 时按设计跳过。
+历史默认验证结果曾记录为 57 项；认证会话和限流修复后，本次完整回归重新执行为：64 项测试执行，0 失败，1 项跳过。跳过项是显式集成测试。
 
 ## 未覆盖与环境说明
 
-- 本阶段未在当前默认命令中启动容器，因此尚未宣称真实 MySQL、Redis、RabbitMQ、MinIO 联调已通过。
+- 本次全面验收已通过现有 Compose 运行态的 MySQL、Redis、RabbitMQ、MinIO 健康检查和后端核心 API 烟测。
+- 显式 Testcontainers 命令已通过：Testcontainers 1.21.4 在当前 Docker Engine 29.6.2/API 1.55 环境成功启动 MySQL、Redis、RabbitMQ、MinIO，并完成全新 MySQL 的 8 条 Flyway 迁移。
+- Testcontainers 配置位于项目内 `src/test/resources/testcontainers.properties`；运行阶段14测试时使用 `DOCKER_HOST=npipe:////./pipe/docker_engine`，不依赖 C 盘用户级配置。
 - `Stage14ContainerEnvironmentTest` 验证容器启动、Redis PING、RabbitMQ 连接地址、MinIO API 端口以及全新 MySQL 的 Flyway 迁移；它不是完整应用端到端测试。
 - 真实 RabbitMQ 重复投递、真实数据库并发压力、浏览器端登录联调和生产规模性能仍需在具备 Docker/测试环境时补充验证。

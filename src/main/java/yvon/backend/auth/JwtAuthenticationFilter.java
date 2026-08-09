@@ -25,10 +25,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtTokenService tokenService;
+    private final AuthSessionService sessionService;
     private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtTokenService tokenService, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtTokenService tokenService, AuthSessionService sessionService,
+                                   UserDetailsService userDetailsService) {
         this.tokenService = tokenService;
+        this.sessionService = sessionService;
         this.userDetailsService = userDetailsService;
     }
 
@@ -49,6 +52,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         try {
             Claims claims = tokenService.parse(token);
+            if (!sessionService.isActive(claims)) {
+                return;
+            }
             UserDetails details = userDetailsService.loadUserByUsername(claims.getSubject());
             Number tokenUserId = claims.get("uid", Number.class);
             if (details instanceof UserPrincipal principal

@@ -2,7 +2,7 @@ import { LogoutOutlined, ProjectOutlined, SettingOutlined, UnorderedListOutlined
 import { Button, Layout, Menu, Space, Spin, Typography, message } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { clearAccessToken, currentUser, CurrentUser, getAccessToken } from './api'
+import { ApiError, clearAccessToken, currentUser, CurrentUser, getAccessToken, logout as serverLogout } from './api'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import ManagementPage from './pages/ManagementPage'
@@ -34,7 +34,15 @@ export default function App() {
   if (checking) return <div className="page-loading"><Spin size="large" /></div>
   if (!token || !user) return <Routes><Route path="*" element={<LoginPage onLoggedIn={() => void loadSession()} />} /></Routes>
 
-  const logout = () => { clearAccessToken(); setToken(null); setUser(null); navigate('/login'); message.success('已退出登录') }
+  const logout = async () => {
+    try { await serverLogout() }
+    catch (error) {
+      if (!(error instanceof ApiError && error.status === 401)) {
+        message.warning('服务器未确认退出，当前令牌将在过期后失效')
+      }
+    }
+    finally { clearAccessToken(); setToken(null); setUser(null); navigate('/login'); message.success('已退出登录') }
+  }
   const menuItems = [
     can('task:read') && { key: '/tasks', icon: <UnorderedListOutlined />, label: '任务中心' },
     can('project:read') && { key: '/', icon: <ProjectOutlined />, label: '工作台' },
