@@ -1,5 +1,22 @@
 # Changelog
 
+## GitHub Actions exit code 126 修复 - 2026-08-09
+
+- 修复 Linux runner 直接执行 `./mvnw` 的 exit code 126：`mvnw` Git mode 从 `100644` 修复为 `100755`，workflow 同时使用 `bash ./mvnw`，不再依赖 Windows 工作区的 executable bit。
+- `actions/checkout`、`setup-java`、`setup-node` 升级到 Node 24 运行时版本线，artifact upload 升级到 Node 24 版本，消除 Node 20/deprecated setup-java v4 警告。
+- integration-security artifact 改为 `if-no-files-found: ignore`；Maven 前置失败时不会把缺失覆盖率/依赖报告误判为新的根因。npm audit 固定使用官方 registry 并保留真实退出码说明。
+
+## 阶段 7 全量复验与最终评分 - 2026-08-09
+
+- 重新执行后端默认回归 67/0/1，显式 Testcontainers verify 67/0/0，真实完成 8 条 Flyway 迁移；JaCoCo 行覆盖率 47.70%，门禁通过。
+- 按 package-lock 执行前端 `npm install`，`npm run build` 通过；最终最大共享 chunk 747.99 KB，仍有 Vite 500 KB warning；项目无 lint/test script，未虚构执行结果。
+- Compose 六服务均 healthy；精确重启 backend、frontend、MySQL、Redis、RabbitMQ、MinIO 后恢复 healthy，health 和 frontend 首页返回 200；未删除卷。
+- Kind base/overlay Kustomize、backend/frontend/local edge rollout 和 backend Pod 删除恢复通过；本轮未把无 Ingress Controller 的 Kind 环境包装成生产 Ingress/HA。
+- 阶段 5 故障脚本全量 stop/start 演练执行并生成 `docs/fault-injection-final-2026-08-09.json`；因没有注入认证 Token/数据库密码，认证和 DB 事实计数明确记录为未采集。
+- 官方 npm audit 当前为 2 个 moderate、high/critical 0；OWASP Dependency-Check 实际运行但因 hosted suppressions 连接重置和依赖告警失败，未声称零漏洞。
+- Playwright 最终执行为 1 失败、8 未运行（缺少 E2E 凭据）；同参数性能复测因缺少管理员密码安全失败，均不伪造为通过。
+- 新增 `docs/final-optimization-summary-2026-08-09.md`，最终评分按严格证据调整为 80/100；同步验收报告、评分 JSON 和中文面试材料。
+
 ## 阶段 6 Kind 生产样式本地验证 - 2026-08-09
 
 - 新增 `k8s/base` 与 `k8s/overlays/kind-production-like` 配置分层；overlay 使用 prod profile、只暴露 health 管理面，并且不覆盖已注入的 `taskflow-secret`。

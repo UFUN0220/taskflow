@@ -14,9 +14,9 @@
 结果：
 
 - JaCoCo HTML：`target/site/jacoco/index.html`；XML：`target/site/jacoco/jacoco.xml`；
-- 快速回归：66 项执行，0 失败，1 跳过；
-- 显式 Testcontainers：1 项通过，完成 MySQL、Redis、RabbitMQ、MinIO 启动和 8 条 Flyway 迁移；
-- 覆盖率门禁通过：总行覆盖率 47.20%；
+- 阶段 7 快速回归：67 项执行，0 失败，1 跳过；
+- 阶段 7 显式 Testcontainers：67 项执行，0 失败，0 跳过，完成 MySQL、Redis、RabbitMQ、MinIO 启动和 8 条 Flyway 迁移；
+- 覆盖率门禁通过：最终 JaCoCo 总行覆盖率 47.70%；
 - 核心类门槛为 45%，当前纳入的认证、数据权限、任务、通知和提醒核心类均达到门槛；
 - JaCoCo 只对可解释的代码覆盖设置门槛，没有为了提高数字新增无业务价值测试。
 
@@ -39,7 +39,7 @@ $env:npm_config_registry = "https://registry.npmjs.org"
 npm audit --audit-level=high --json
 ```
 
-结果：退出码 0；总计 2 个 moderate advisory，high 0，critical 0，low 0。原始 JSON 写入未跟踪的 `target/npm-audit-official.json`。这只是当前 lockfile 和 registry 数据库时间点的结果，不是永久无漏洞保证。
+阶段 7 使用官方 registry 和高危门槛执行：退出码 0；总计 2 个 moderate advisory，high 0，critical 0，low 0。未使用 `--audit-level=high` 的全量命令会因 moderate advisory 返回退出码 1；这不是“零漏洞”。当前 advisory 影响 React Router/React Router DOM，存在可用修复提示，需单独评估升级。
 
 ## OWASP Dependency-Check / NVD
 
@@ -49,7 +49,7 @@ Maven 已新增 `security-scan` profile：
 .\mvnw.cmd -Psecurity-scan -DskipTests verify
 ```
 
-本机实际执行超过 5 分钟后超时，未生成 `target/dependency-check-report.*`，因此本阶段不能声称 Maven/NVD 扫描成功，也不能声称漏洞为 0。GitHub Actions 中该步骤保留为 advisory，并上传报告（若生成）；网络或 NVD 数据库不可用时 workflow 不会伪造成功结果。
+阶段 7 实际执行约 2 分钟：NVD 数据库使用了近期缓存，但 hosted suppressions 下载连接重置；扫描仍生成了依赖检查输出并因 CVSS 阈值失败。输出包含 Kotlin、Netty、Spring Boot/Spring Framework/Spring Security、Tomcat 等高危告警，需按报告逐项核实。结果是“扫描执行但质量门禁失败”，不是“漏洞为 0”；在依赖升级或经审查的临时抑制前，不得把 security workflow 说成通过。
 
 ## 门禁分层
 
@@ -65,6 +65,7 @@ Maven 已新增 `security-scan` profile：
 ## 当前限制
 
 - 本机没有安装 `actionlint`，workflow YAML 已通过 PyYAML 语法解析，但尚未完成 actionlint 级语义检查；
-- GitHub Actions 尚未在远程仓库实际运行，当前记录是仓库内 workflow 配置和本地静态/命令证据；
-- 前端生产 bundle 仍有约 1.16 MB 的既有 chunk warning；
-- 依赖扫描没有自动升级依赖，后续应根据 advisory 的具体路径进行人工评估和单独变更。
+- GitHub Actions 已在远程执行过，但 integration-security 在 Maven Wrapper 权限阶段以 exit code 126 失败；本轮已修复，尚未获得修复后的远程重跑结果；
+- GitHub runner 的 exit code 126 根因是 Git 中 `mvnw` 原先为 mode `100644`，workflow 已改为 `bash ./mvnw`，并同步修复 wrapper 的 Unix executable bit；Action 已迁移到 checkout/setup-java/setup-node 的 Node 24 版本线，artifact upload 使用 Node 24 版本线。
+- 前端最终最大共享 chunk 约 747.99 KB，仍有 Vite 500 KB warning；
+- 当前依赖扫描没有自动升级依赖；需要人工核实 OWASP/NVD 结果是否存在 CPE 误报，再通过单独依赖升级变更和完整回归关闭告警。

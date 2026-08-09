@@ -1,7 +1,7 @@
 {
   "report_date": "2026-08-09",
-  "overall_score": 82,
-  "raw_weighted_score": 82.1,
+  "overall_score": 80,
+  "raw_weighted_score": 80.4,
   "scoring_method": "Each dimension is scored from 0 to 100 and multiplied by its weight. Only reproducible local evidence, code/test evidence, or explicitly documented evidence receives credit. The score is not a production SLA, capacity result, or security certification.",
   "decision": "local_engineering_baseline_conditionally_accepted",
   "local_demo_ready": true,
@@ -11,9 +11,9 @@
     {
       "name": "requirements_and_core_functionality",
       "weight": 15,
-      "score": 86,
-      "weighted_score": 12.9,
-      "evidence": "Stages 0-19 cover authentication, organization, projects/tasks, comments, attachments, reminders, notifications, audit, frontend and deployment paths; Stage 3 adds 9 Playwright scenarios but the last reproducible run is 4/9, so full browser coverage and malware scanning remain incomplete."
+      "score": 84,
+      "weighted_score": 12.6,
+      "evidence": "Stages 0-19 cover authentication, organization, projects/tasks, comments, attachments, reminders, notifications, audit, frontend and deployment paths; the final Playwright attempt had 1 failed and 8 not run because credentials were not injected, so full browser coverage remains incomplete."
     },
     {
       "name": "architecture_and_explainability",
@@ -25,44 +25,44 @@
     {
       "name": "security_and_data_protection",
       "weight": 15,
-      "score": 73,
-      "weighted_score": 10.95,
-      "evidence": "Stage 1 security controls remain verified; Stage 2 adds official npm audit visibility with 0 high/critical findings at this lockfile snapshot; Stage 6 adds local Kind TLS, ConfigMap/Secret separation, and an explicit no-arbitrary-forwarded-header boundary. OWASP/NVD did not complete locally and no dependency result is treated as a production security guarantee. localStorage tokens, external Secret Manager/rotation, real Ingress proxy isolation, and production certificate management remain material gaps."
+      "score": 68,
+      "weighted_score": 10.2,
+      "evidence": "Stage 1 controls, prod Secret fail-fast, management-plane restriction, security headers, no-arbitrary-forwarded-header boundary and local Kind TLS remain verified. Official npm audit has 2 moderate advisories; OWASP Dependency-Check executed but failed on hosted suppressions/network and reported high-risk dependencies. localStorage tokens, external Secret Manager/rotation, real Ingress proxy isolation and production certificate management remain material gaps."
     },
     {
       "name": "tests_builds_and_regression",
       "weight": 15,
-      "score": 88,
-      "weighted_score": 13.2,
-      "evidence": "Maven 67 tests with 0 failures and 1 optional skip, explicit Testcontainers verification, JaCoCo report and gate, frontend typecheck/build, Compose config and Kind verification are recorded; Playwright has 9 scenarios with a last reproducible 4/9 result, so browser E2E is not complete."
+      "score": 84,
+      "weighted_score": 12.6,
+      "evidence": "Default Maven 67/0/1 and explicit Testcontainers verify 67/0/0 passed; JaCoCo line coverage is 47.70%, frontend install/typecheck/build, Compose config and Kind verification passed. Final Playwright run had 1 failed and 8 not run because credentials were not injected."
     },
     {
       "name": "evaluation_and_observability",
       "weight": 15,
-      "score": 82,
-      "weighted_score": 12.3,
-      "evidence": "A fixed local performance baseline, protected runtime metrics, EXPLAIN output, Actuator metrics, JaCoCo XML/HTML, dependency scans, and new Redis/RabbitMQ/MinIO fault-before/during/after snapshots with MySQL count comparisons exist; official npm audit completed, while OWASP/NVD timed out, same-parameter replay is blocked, and real Rabbit retry/DLQ/replay remains incomplete."
+      "score": 80,
+      "weighted_score": 12.0,
+      "evidence": "A fixed local performance baseline, protected runtime metrics, EXPLAIN output, Actuator metrics, JaCoCo XML/HTML, official npm audit and a final six-scenario fault artifact exist. Same-parameter replay failed safely because the admin password was unavailable; final fault snapshots lacked DB facts/authenticated probes; OWASP failed with dependency findings and Rabbit retry/DLQ/replay remains incomplete."
     },
     {
       "name": "runtime_integration_and_recovery_readiness",
       "weight": 15,
-      "score": 79,
-      "weighted_score": 11.85,
-      "evidence": "Redis, RabbitMQ and MinIO short stop/start recovery passed with unchanged observed MySQL facts; six-service Compose health, prior persistent restart, Kind application probes, pod recovery and rolling restart passed. Stage 6 overlay rollout, local HTTPS and WSS 101 handshake passed, but the cluster has no Ingress Controller and STOMP/browser notification recovery was not verified. MySQL was not re-injected in Stage 5, middleware remains single-instance, and there is no production Ingress controller, HPA or multi-node HA evidence."
+      "score": 80,
+      "weighted_score": 12.0,
+      "evidence": "Six Compose services were healthy, exact container restart recovered health, Redis/RabbitMQ/MinIO/MySQL/backend stop/start scenarios executed, and Kind overlay rollout plus backend Pod recovery passed. Final fault snapshots had no DB fact counts and no authenticated probe; RabbitMQ was unavailable in part of the post-restart snapshot. Stage 6 WSS 101 remains prior local evidence, while no Ingress Controller, STOMP/browser notification recovery, HPA or multi-node HA evidence exists."
     },
     {
       "name": "engineering_governance",
       "weight": 5,
       "score": 68,
       "weighted_score": 3.4,
-      "evidence": "Two readable GitHub Actions workflows now separate fast checks from Testcontainers/coverage/security jobs; JaCoCo gates and scan policies are configured, but workflows have not yet executed on the remote repository and actionlint is not installed locally."
+      "evidence": "Two readable GitHub Actions workflows separate fast checks from Testcontainers/coverage/security jobs; the remote integration-security run exposed exit code 126 from mvnw mode 100644, now fixed with executable mode and bash invocation. A post-fix remote rerun and actionlint are still missing."
     },
     {
       "name": "documentation_and_delivery_credibility",
       "weight": 5,
-      "score": 92,
-      "weighted_score": 4.6,
-      "evidence": "README, CHANGELOG, stage documents, Chinese interview material and the acceptance report distinguish local evidence from production claims."
+      "score": 94,
+      "weighted_score": 4.7,
+      "evidence": "README, CHANGELOG, stage documents, final optimization summary, Chinese interview material and the acceptance report were synchronized with the final evidence and explicit production boundaries."
     }
   ],
   "verification": {
@@ -71,7 +71,7 @@
       "failed": 0,
       "skipped": 1
     },
-    "stage14_testcontainers": "passed",
+    "stage14_testcontainers": "passed_in_explicit_verify_67_tests_0_failures_0_skips",
     "frontend_typecheck": "passed",
     "frontend_build": "passed_after_route_level_lazy_loading; largest_shared_chunk_747991_bytes_still_above_500KB_warning",
     "compose_config": "passed_with_ephemeral_non_sensitive_test_values;_expected_fail_fast_without_.env",
@@ -81,12 +81,15 @@
     "stage4_frontend_bundle": "old_entry_1156965_bytes_to_largest_shared_chunk_747991_bytes; route_chunks_emitted; no_total_transfer_reduction_claim",
     "stage4_runtime_metrics": "protected_actuator_hikari_executor_jvm_rabbitmq_and_redis_snapshot_recorded",
     "stage4_sql_explain": "task_and_notification_plans_and_existing_indexes_recorded; no_new_flyway_index_migration",
-    "npm_audit": "official_registry_passed_2_moderate_0_high_0_critical",
-    "owasp_dependency_check": "configured_but_timed_out_before_report_generation",
+    "npm_audit": "official_registry_high_threshold_exit_0_with_2_moderate_0_high_0_critical;full_audit_exit_1",
+    "owasp_dependency_check": "executed_but_failed_hosted_suppressions_connection_reset_and_high_risk_dependency_findings",
     "online_dependency_scan": "partially_completed",
     "full_browser_e2e": "partially_executed_4_passed_5_failed; real_websocket_connected_but_subscribe_failed_before_fix_reverification",
     "stage5_fault_injection": "redis_passed_rabbit_container_recovery_passed_minio_failed_upload_and_recovery_passed; rabbit_real_retry_dlq_replay_mysql_restart_and_browser_websocket_reconnect_incomplete",
-    "stage6_kind_production_like": "base_and_overlay_kustomize_passed; backend_2_frontend_1_local_edge_1_rollouts_passed; https_home_and_api_health_200; wss_upgrade_101; no_ingress_controller_and_stomp_notification_e2e_unverified"
+    "stage6_kind_production_like": "base_and_overlay_kustomize_passed; backend_2_frontend_1_local_edge_1_rollouts_passed; prior_https_home_and_api_health_200_and_wss_upgrade_101; no_ingress_controller_and_stomp_notification_e2e_unverified",
+    "stage7_final_fault_injection": "all_six_stop_start_scenarios_executed_without_volume_operation; health_recovered; authenticated_probe_and_db_fact_counts_not_collected",
+    "stage7_performance_replay": "blocked_by_missing_TASKFLOW_PERF_ADMIN_PASSWORD",
+    "stage7_browser_e2e": "1_failed_8_not_run_due_missing_E2E_ADMIN_PASSWORD_and_E2E_TEST_USER_PASSWORD"
   },
   "production_gate_blockers": [
     "external_secret_injection_rotation_and_audit_not_completed",
@@ -113,6 +116,8 @@
     "docs/fault-injection-rabbitmq-2026-08-09.json",
     "docs/fault-injection-minio-2026-08-09.json",
     "docs/fault-injection-dry-run.json",
-    "docs/kind-production-like-validation.md"
+    "docs/kind-production-like-validation.md",
+    "docs/final-optimization-summary-2026-08-09.md",
+    "docs/fault-injection-final-2026-08-09.json"
   ]
 }

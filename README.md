@@ -20,17 +20,19 @@ Stage 18 adds a security and quality review, hardens audit source-address handli
 
 阶段 6 新增 Kind `kind-production-like` overlay、`taskflow.local` 本地 TLS 证书脚本、`/`/`/api`/`/ws` 路由定义和 namespace 内 HTTPS/WSS 验证 edge。当前集群没有 Ingress Controller，因此仅计为生产样式静态配置和本地 TLS/WSS 握手证据，不计为真实生产 Ingress 或生产 HA。
 
+阶段 7 完成最终复验：默认 Maven 67/0/1，显式 Testcontainers verify 67/0/0，JaCoCo 行覆盖率 47.70%，前端 install/typecheck/build、Compose 六服务健康/保卷重启、Kind rollout/Pod 恢复和故障演练均有新证据。管理员登录、完整浏览器 E2E、同参数性能复测和真实 Ingress Controller 仍未形成最终闭环；npm 有 2 个 moderate，OWASP 扫描因依赖告警失败。最终评分为 **80/100**，生产发布仍不通过。详见[最终复验摘要](docs/final-optimization-summary-2026-08-09.md)。
+
 The backend now includes task draft maintenance, filtered and paginated task queries, primary/collaborator assignment, scoped detail access, batch assignee loading, task operation logs, a fixed task state machine, optimistic concurrency control using old-status-plus-version conditional updates, task comments, MinIO-backed attachment metadata workflows, persistent reminder plans, Redis ZSet scheduling, distributed scanning locks, RabbitMQ reminder publishing, idempotent notification consumers, bounded retries, dead-letter compensation, HTTP notification query APIs, and STOMP over WebSocket user-destination push. Flyway V1 through V8 are designed for a fresh MySQL database.
 
 企业任务协同与流程管理平台，面向学习和校招面试准备，采用模块化单体架构逐阶段实现。
 
 ## 当前进度
 
-当前阶段 19 已完成登录、Redis 会话标记、后端登出撤销、登录失败限流、前端退出体验、Token 持久化、任务与项目基础流程、评论、附件、通知中心、用户/角色/部门管理、统一错误处理、自动化测试、性能工具、全容器部署、本地 Kubernetes 应用层清单、安全质量审查、阶段5部分故障恢复演练和基于已验证代码的面试简历材料。阶段 1 已收紧生产 Secret、管理面和基础安全 Header；前端 Token 仍使用 Bearer + 本地存储，生产化前仍需完成 HttpOnly Cookie/CSRF 或等价的严格 XSS 防护方案。
+当前阶段 19 已完成登录、Redis 会话标记、后端登出撤销、登录失败限流、前端退出体验、Token 持久化、任务与项目基础流程、评论、附件、通知中心、用户/角色/部门管理、统一错误处理、自动化测试、性能工具、全容器部署、本地 Kubernetes 应用层清单、安全质量审查、阶段5部分故障恢复演练、阶段7最终复验和基于已验证代码的面试简历材料。阶段 1 已收紧生产 Secret、管理面和基础安全 Header；前端 Token 仍使用 Bearer + 本地存储，生产化前仍需完成 HttpOnly Cookie/CSRF 或等价的严格 XSS 防护方案。
 
-2026-08-09 全面验收结论：项目可在本地 Compose 环境运行和演示；认证撤销、登录限流代码及测试已补齐，阶段 1 后端回归为 66 项执行、0 失败、1 项跳过，前端生产构建和安全配置静态校验通过，真实旧 Token 失效烟测通过。阶段 15 已完成固定本地数据规模下的性能基线与运行时采集，阶段 17 已在 Kind `dev` 集群完成前后端部署、探针、Pod 恢复和滚动重启验证；这些结果均不等同于生产容量或生产高可用。Token localStorage、TLS/WSS、集中式 Secret 管理、在线依赖扫描和完整浏览器 E2E 等生产基线仍不完整，项目暂不判定为生产就绪。详见[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
+2026-08-09 最终验收结论：项目可在本地 Compose 环境运行和演示；最终默认后端回归为 67 项执行、0 失败、1 项跳过，显式 Testcontainers verify 为 67/0/0，前端生产构建、Compose 六服务健康/保卷重启、Kind rollout/Pod 恢复和故障演练均有证据。阶段 15 性能基线仍只代表当前 Windows 本机，管理员登录、完整浏览器 E2E、同参数性能复测、真实 Ingress 和依赖风险治理仍未闭环；这些结果均不等同于生产容量或生产高可用，项目暂不判定为生产就绪。详见[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
-参考 PriceSight 项目采用的加权验收方法，本项目阶段 6 后评分建议保持 **82/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。阶段 6 验证了 Kind 生产样式 overlay、配置分层、HTTPS 首页/健康接口和 WSS 101 握手，但当前没有真实 Ingress Controller，STOMP 通知闭环未完成，因此不机械加分。Rabbit retry/DLQ/replay、MySQL 本阶段重启、浏览器 WebSocket 重连、OWASP/NVD、localStorage 和集中式密钥管理等未完成项仍不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
+参考 PriceSight 项目采用的加权验收方法，本项目阶段 7 最终评分为 **80/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。最终复验重新确认了后端/Testcontainers、前端构建、Compose 重启、Kind rollout/Pod 恢复和故障演练证据，同时确认管理员登录、完整 E2E、同参数性能复测、真实 Ingress 和依赖风险治理仍未闭环。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
 
 ## 技术栈
 
@@ -158,7 +160,7 @@ F:\newinstall\kubectl.exe kustomize k8s
 .\mvnw.cmd "-Dtaskflow.integration=true" verify
 ```
 
-JaCoCo 报告位于 `target/site/jacoco/`。Windows PowerShell 中必须给 `-Dtaskflow.integration=true` 加引号，避免被 Maven 误解析为 `.integration=true` 生命周期阶段。GitHub Actions 分为 `fast-check` 和 `integration-security`：前者阻断快速回归、前端构建及 Compose/Kustomize 静态错误；后者执行 Testcontainers 和覆盖率，npm/OWASP 在线扫描暂为 advisory，并明确记录网络或数据库不可用。
+JaCoCo 报告位于 `target/site/jacoco/`。Windows PowerShell 中必须给 `-Dtaskflow.integration=true` 加引号，避免被 Maven 误解析为 `.integration=true` 生命周期阶段；GitHub Linux runner 使用 `bash ./mvnw`，且 `mvnw` 已标记为 Unix executable，避免 exit code 126。GitHub Actions 分为 `fast-check` 和 `integration-security`：前者阻断快速回归、前端构建及 Compose/Kustomize 静态错误；后者执行 Testcontainers 和覆盖率，npm/OWASP 在线扫描暂为 advisory，并明确记录网络或数据库不可用。Actions 已迁移到 Node 24 运行时版本线。
 
 浏览器 E2E 使用 Playwright，覆盖登录、401/403、任务真实写入、重复提交保护、登出失效、附件入口和通知中心。测试密码只通过当前终端环境变量注入，不写入仓库；失败时 Playwright 在 `frontend/test-results/` 保留截图、视频或 trace。当前阶段的真实执行结果和 WebSocket 证据见[浏览器 E2E 验收记录](docs/e2e-browser-report-2026-08-09.md)，未通过的场景不会被包装成生产结论。
 

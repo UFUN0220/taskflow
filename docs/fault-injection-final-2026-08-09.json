@@ -1,0 +1,554 @@
+{
+  "capturedAt": "2026-08-09T14:24:02.5910265Z",
+  "project": "TaskFlow Platform",
+  "execute": true,
+  "safety": [
+    "Only exact taskflow-platform-* container names were allowed",
+    "Only docker stop/start were used for injection",
+    "No compose down, docker rm, volume deletion or database cleanup was performed"
+  ],
+  "scenarios": [
+    {
+      "scenario": "redis_restart",
+      "status": "executed",
+      "target": "taskflow-platform-redis-1",
+      "before": {
+        "capturedAt": "2026-08-09T14:21:19.6786934Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "during": {
+        "capturedAt": "2026-08-09T14:21:24.5160573Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "unavailable"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "after": {
+        "capturedAt": "2026-08-09T14:21:43.8907044Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "restoredTarget": {
+        "status": "running",
+        "health": "healthy",
+        "running": true
+      },
+      "databaseConsistency": "not_comparable_database_snapshot_missing",
+      "volumeOperation": "none",
+      "productionBoundary": "single local container restart only; not HA or failover evidence"
+    },
+    {
+      "scenario": "rabbitmq_restart",
+      "status": "executed",
+      "target": "taskflow-platform-rabbitmq-1",
+      "before": {
+        "capturedAt": "2026-08-09T14:21:46.6943405Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "during": {
+        "capturedAt": "2026-08-09T14:21:55.2332427Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "unavailable"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "after": {
+        "capturedAt": "2026-08-09T14:22:13.8086024Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "unavailable"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "restoredTarget": {
+        "status": "running",
+        "health": "healthy",
+        "running": true
+      },
+      "databaseConsistency": "not_comparable_database_snapshot_missing",
+      "volumeOperation": "none",
+      "productionBoundary": "single local container restart only; not HA or failover evidence"
+    },
+    {
+      "scenario": "minio_restart",
+      "status": "executed",
+      "target": "taskflow-platform-minio-1",
+      "before": {
+        "capturedAt": "2026-08-09T14:22:16.6143077Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "unavailable"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "during": {
+        "capturedAt": "2026-08-09T14:22:24.3658220Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": null
+        }
+      },
+      "after": {
+        "capturedAt": "2026-08-09T14:22:46.9459559Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "restoredTarget": {
+        "status": "running",
+        "health": "healthy",
+        "running": true
+      },
+      "databaseConsistency": "not_comparable_database_snapshot_missing",
+      "volumeOperation": "none",
+      "productionBoundary": "single local container restart only; not HA or failover evidence"
+    },
+    {
+      "scenario": "mysql_restart",
+      "status": "executed",
+      "target": "taskflow-platform-mysql-1",
+      "before": {
+        "capturedAt": "2026-08-09T14:22:47.7140200Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "during": {
+        "capturedAt": "2026-08-09T14:22:54.5859477Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "after": {
+        "capturedAt": "2026-08-09T14:23:06.5924738Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "restoredTarget": {
+        "status": "running",
+        "health": "healthy",
+        "running": true
+      },
+      "databaseConsistency": "not_comparable_database_snapshot_missing",
+      "volumeOperation": "none",
+      "productionBoundary": "single local container restart only; not HA or failover evidence"
+    },
+    {
+      "scenario": "backend_restart",
+      "status": "executed",
+      "target": "taskflow-platform-backend-1",
+      "before": {
+        "capturedAt": "2026-08-09T14:23:07.2392358Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "during": {
+        "capturedAt": "2026-08-09T14:23:11.9677974Z",
+        "appHealth": null,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "exited",
+          "health": "unhealthy",
+          "running": false
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "after": {
+        "capturedAt": "2026-08-09T14:23:34.1406641Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "restoredTarget": {
+        "status": "running",
+        "health": "healthy",
+        "running": true
+      },
+      "databaseConsistency": "not_comparable_database_snapshot_missing",
+      "volumeOperation": "none",
+      "productionBoundary": "single local container restart only; not HA or failover evidence"
+    },
+    {
+      "scenario": "backend_restart_for_websocket_reconnect",
+      "status": "executed",
+      "target": "taskflow-platform-backend-1",
+      "before": {
+        "capturedAt": "2026-08-09T14:23:34.9035857Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "during": {
+        "capturedAt": "2026-08-09T14:23:39.5495007Z",
+        "appHealth": null,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "exited",
+          "health": "unhealthy",
+          "running": false
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "after": {
+        "capturedAt": "2026-08-09T14:24:01.6779128Z",
+        "appHealth": 200,
+        "authMe": "not_collected_no_token",
+        "backend": {
+          "status": "running",
+          "health": "healthy",
+          "running": true
+        },
+        "mysql": {
+          "status": "not_collected"
+        },
+        "redis": {
+          "status": "ok",
+          "ping": "PONG",
+          "reminderZsetCardinality": "0"
+        },
+        "rabbitmq": {
+          "status": "ok",
+          "queues": "[\n{\"name\":\"taskflow.reminder.dead\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.dispatch\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n,{\"name\":\"taskflow.reminder.retry\",\"messages_ready\":0,\"messages_unacknowledged\":0}\n]"
+        },
+        "minio": {
+          "status": "http",
+          "live": 200
+        }
+      },
+      "restoredTarget": {
+        "status": "running",
+        "health": "healthy",
+        "running": true
+      },
+      "databaseConsistency": "not_comparable_database_snapshot_missing",
+      "volumeOperation": "none",
+      "productionBoundary": "single local container restart only; not HA or failover evidence"
+    }
+  ],
+  "businessProbeBoundary": "API probes not collected; provide TASKFLOW_FAULT_ACCESS_TOKEN for authenticated checks"
+}

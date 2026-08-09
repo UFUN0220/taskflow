@@ -2,7 +2,7 @@
 
 本文只使用当前仓库中已经实现并验证的内容。除非明确标注为“配置目标”或“未验证”，不要把本地 Compose、Kubernetes 清单、测试数据或示例配置描述成生产运行结果。
 
-阶段 1 后项目级加权验收评分建议为 **80/100**：本地工程基线有条件通过，生产发布不通过。该分数用于概括当前证据成熟度，不是 QPS、可用性或安全认证；安全维度已因 Secret fail-fast、管理面收紧和 Header 测试从 66 调整为 73，但 localStorage、TLS/WSS 和外部密钥轮换仍扣分。评分维度和 P0/P1/P2 门禁见[全面验收报告](project-acceptance-report-2026-08-09.md)。
+阶段 7 最终复验后的项目级加权评分为 **80/100**：本地工程基线有条件通过，生产发布不通过。该分数不是 QPS、可用性或安全认证；最终后端回归和 Testcontainers 通过，但当前 E2E、同参数性能复测和 OWASP 依赖扫描分别受凭据/依赖告警边界限制。评分维度和 P0/P1/P2 门禁见[全面验收报告](project-acceptance-report-2026-08-09.md)。
 
 ## 一、5 条中文简历描述
 
@@ -19,7 +19,7 @@
 3. 将提醒计划、通知事实和实时推送拆分：`reminder_plan` 保存持久计划，Redis 仅作为调度索引，RabbitMQ 负责异步投递，`notification` 负责用户查询；Redis 索引丢失时通过数据库重建。
 4. 为 RabbitMQ 消费者设计按消息 ID 的幂等处理、有限重试和死信补偿，使用 publisher confirm、mandatory returns、手动 Ack 和 traceId/messageId 传递，避免无限重试和重复通知。
 5. 使用 Spring Security 方法级权限和服务层数据范围双重保护资源访问；数据范围支持 SELF、DEPARTMENT、DEPARTMENT_AND_CHILDREN、PROJECT、ALL，并由后端根据当前用户身份推导过滤条件。
-6. 完成 Docker Compose 六服务运行验证以及后端/前端构建验证；当前默认 Maven 测试结果为 64 项通过、1 项可选容器测试按默认配置跳过，显式阶段14容器测试已通过；在 Kind `dev` 中完成前后端探针、端口转发健康、后端 Pod 恢复和滚动重启验证，并保留阶段15本地性能基线报告。
+6. 完成 Docker Compose 六服务健康与保卷重启验证；最终默认 Maven 为 67 项执行、0 失败、1 项可选容器测试跳过，显式 Testcontainers verify 为 67 项执行、0 失败、0 跳过；前端 typecheck/build 通过；Kind `dev` 中完成前后端探针、Pod 恢复和滚动更新验证，并保留本机性能基线。完整浏览器 E2E 和同参数性能复测仍需受控凭据后复验。
 
 ## 三、30 秒项目介绍
 
@@ -35,7 +35,7 @@
 
 提醒模块把 MySQL 中的 `reminder_plan` 作为事实来源，Redis ZSet 负责调度索引，定时扫描后向 RabbitMQ 发布消息。消费者按消息 ID 和用户 ID 幂等写入通知，失败时最多进行有限次数重试，超过上限记录死信并支持管理员补偿。WebSocket 只负责实时推送，断线后仍通过 HTTP 从通知表补拉。
 
-质量方面，项目有后端单元/接口测试、前端构建、Docker Compose 六服务健康验证、Kind 应用层实机验证和阶段15本地性能基线。阶段 1 又补充了生产弱 Secret 拒绝、基础安全 Header 和管理面配置证据。当前能如实报告的是这些本地证据；生产级高可用、TLS、集中式密钥管理、在线依赖扫描和目标环境容量仍是后续工作。
+质量方面，项目有后端单元/接口测试、Testcontainers、JaCoCo、前端构建、Docker Compose 六服务健康与重启验证、Kind 应用层实机验证和阶段15本机性能基线。阶段 1 又补充了生产弱 Secret 拒绝、基础安全 Header 和管理面配置证据。当前能如实报告的是这些本地证据；生产级高可用、Token Cookie 化、外部密钥轮换、真实 Ingress/STOMP 通知、依赖告警治理和目标环境容量仍未完成。
 
 ## 五、实习场景下的个人职责说明
 
