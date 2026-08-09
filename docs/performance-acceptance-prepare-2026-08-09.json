@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-08-09T15:45:21.917524+00:00",
+  "baseUrl": "http://127.0.0.1:18080",
+  "departments": 1,
+  "users": 1,
+  "tasks": 1,
+  "taskIds": [
+    6
+  ]
+}

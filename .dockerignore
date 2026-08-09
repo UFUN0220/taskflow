@@ -4,7 +4,9 @@
 .env
 .env.*
 !.env.example
-target
+target/*
+!target/
+!target/taskflow-backend-*.jar
 frontend/node_modules
 frontend/dist
 frontend/.npm-cache

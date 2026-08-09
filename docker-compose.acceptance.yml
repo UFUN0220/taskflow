@@ -1,0 +1,148 @@
+name: taskflow-acceptance
+
+# Isolated, local-only acceptance stack. Every credential is supplied by the
+# caller; this file deliberately has no password fallback and never removes a
+# volume. It uses the same six services as the normal Compose environment.
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    ports:
+      - "${TASKFLOW_ACCEPTANCE_MYSQL_PORT:-13307}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${TASKFLOW_ACCEPTANCE_DB_ROOT_PASSWORD:?Set TASKFLOW_ACCEPTANCE_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${TASKFLOW_ACCEPTANCE_DB_NAME:-taskflow_acceptance}
+      MYSQL_USER: ${TASKFLOW_ACCEPTANCE_DB_USERNAME:?Set TASKFLOW_ACCEPTANCE_DB_USERNAME}
+      MYSQL_PASSWORD: ${TASKFLOW_ACCEPTANCE_DB_PASSWORD:?Set TASKFLOW_ACCEPTANCE_DB_PASSWORD}
+    volumes:
+      - taskflow-acceptance-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    ports:
+      - "${TASKFLOW_ACCEPTANCE_REDIS_PORT:-16380}:6379"
+    volumes:
+      - taskflow-acceptance-redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    restart: unless-stopped
+    ports:
+      - "${TASKFLOW_ACCEPTANCE_RABBITMQ_PORT:-25672}:5672"
+      - "${TASKFLOW_ACCEPTANCE_RABBITMQ_MANAGEMENT_PORT:-25673}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${TASKFLOW_ACCEPTANCE_RABBITMQ_USERNAME:?Set TASKFLOW_ACCEPTANCE_RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${TASKFLOW_ACCEPTANCE_RABBITMQ_PASSWORD:?Set TASKFLOW_ACCEPTANCE_RABBITMQ_PASSWORD}
+    volumes:
+      - taskflow-acceptance-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    restart: unless-stopped
+    ports:
+      - "${TASKFLOW_ACCEPTANCE_MINIO_PORT:-19000}:9000"
+      - "${TASKFLOW_ACCEPTANCE_MINIO_CONSOLE_PORT:-19001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${TASKFLOW_ACCEPTANCE_MINIO_ROOT_USER:?Set TASKFLOW_ACCEPTANCE_MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${TASKFLOW_ACCEPTANCE_MINIO_ROOT_PASSWORD:?Set TASKFLOW_ACCEPTANCE_MINIO_ROOT_PASSWORD}
+    volumes:
+      - taskflow-acceptance-minio-data:/data
+    command: ["server", "/data", "--console-address", ":9001"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    image: taskflow-acceptance-backend:local
+    build:
+      context: .
+      dockerfile: Dockerfile.acceptance
+    restart: unless-stopped
+    ports:
+      - "${TASKFLOW_ACCEPTANCE_BACKEND_PORT:-18080}:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: acceptance
+      DB_URL: "jdbc:mysql://mysql:3306/${TASKFLOW_ACCEPTANCE_DB_NAME:-taskflow_acceptance}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai"
+      DB_USERNAME: ${TASKFLOW_ACCEPTANCE_DB_USERNAME:?Set TASKFLOW_ACCEPTANCE_DB_USERNAME}
+      DB_PASSWORD: ${TASKFLOW_ACCEPTANCE_DB_PASSWORD:?Set TASKFLOW_ACCEPTANCE_DB_PASSWORD}
+      FLYWAY_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${TASKFLOW_ACCEPTANCE_RABBITMQ_USERNAME:?Set TASKFLOW_ACCEPTANCE_RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${TASKFLOW_ACCEPTANCE_RABBITMQ_PASSWORD:?Set TASKFLOW_ACCEPTANCE_RABBITMQ_PASSWORD}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${TASKFLOW_ACCEPTANCE_MINIO_ROOT_USER:?Set TASKFLOW_ACCEPTANCE_MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${TASKFLOW_ACCEPTANCE_MINIO_ROOT_PASSWORD:?Set TASKFLOW_ACCEPTANCE_MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${TASKFLOW_ACCEPTANCE_MINIO_BUCKET:-taskflow-acceptance-attachments}
+      ATTACHMENT_ENABLED: "true"
+      REMINDER_ENABLED: "true"
+      AUDIT_ENABLED: "true"
+      TASKFLOW_ACCEPTANCE_JWT_SECRET: ${TASKFLOW_ACCEPTANCE_JWT_SECRET:?Set TASKFLOW_ACCEPTANCE_JWT_SECRET}
+      TASKFLOW_ACCEPTANCE_ADMIN_USERNAME: ${TASKFLOW_ACCEPTANCE_ADMIN_USERNAME:?Set TASKFLOW_ACCEPTANCE_ADMIN_USERNAME}
+      TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD: ${TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD:?Set TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD}
+      TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD: ${TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD:?Set TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD}
+      TASKFLOW_ACCEPTANCE_ADMIN_EMPLOYEE_NO: ${TASKFLOW_ACCEPTANCE_ADMIN_EMPLOYEE_NO:-ACCEPTANCE001}
+      TASKFLOW_ACCEPTANCE_ADMIN_DISPLAY_NAME: ${TASKFLOW_ACCEPTANCE_ADMIN_DISPLAY_NAME:-Acceptance Administrator}
+      TASKFLOW_AUTH_LOGIN_RATE_LIMIT_ENABLED: "true"
+      WEBSOCKET_ALLOWED_ORIGINS: "http://localhost:${TASKFLOW_ACCEPTANCE_FRONTEND_PORT:-15173},http://127.0.0.1:${TASKFLOW_ACCEPTANCE_FRONTEND_PORT:-15173}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /api/health HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q status <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  frontend:
+    image: taskflow-acceptance-frontend:local
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${TASKFLOW_ACCEPTANCE_FRONTEND_PORT:-15173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+volumes:
+  taskflow-acceptance-mysql-data:
+  taskflow-acceptance-redis-data:
+  taskflow-acceptance-rabbitmq-data:
+  taskflow-acceptance-minio-data:

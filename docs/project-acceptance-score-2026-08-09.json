@@ -13,7 +13,7 @@
       "weight": 15,
       "score": 84,
       "weighted_score": 12.6,
-      "evidence": "Stages 0-19 cover authentication, organization, projects/tasks, comments, attachments, reminders, notifications, audit, frontend and deployment paths; the final Playwright attempt had 1 failed and 8 not run because credentials were not injected, so full browser coverage remains incomplete."
+      "evidence": "Stages 0-19 cover authentication, organization, projects/tasks, comments, attachments, reminders, notifications, audit, frontend and deployment paths; stage 8 acceptance Compose and smoke are repeatable, while Playwright ran 6/9 with 3 real browser/notification failures, so full browser coverage remains incomplete."
     },
     {
       "name": "architecture_and_explainability",
@@ -34,14 +34,14 @@
       "weight": 15,
       "score": 84,
       "weighted_score": 12.6,
-      "evidence": "Default Maven 67/0/1 and explicit Testcontainers verify 67/0/0 passed; JaCoCo line coverage is 47.70%, frontend install/typecheck/build, Compose config and Kind verification passed. Final Playwright run had 1 failed and 8 not run because credentials were not injected."
+      "evidence": "Default Maven 69/0/1 and explicit Testcontainers verify 69/0/0 passed; JaCoCo line coverage is 47.70%, frontend typecheck/build and acceptance smoke passed. Playwright ran 6/9; duplicate-submit and STOMP/notification recovery scenarios still fail."
     },
     {
       "name": "evaluation_and_observability",
       "weight": 15,
       "score": 80,
       "weighted_score": 12.0,
-      "evidence": "A fixed local performance baseline, protected runtime metrics, EXPLAIN output, Actuator metrics, JaCoCo XML/HTML, official npm audit and a final six-scenario fault artifact exist. Same-parameter replay failed safely because the admin password was unavailable; final fault snapshots lacked DB facts/authenticated probes; OWASP failed with dependency findings and Rabbit retry/DLQ/replay remains incomplete."
+      "evidence": "A fixed local performance baseline, protected runtime metrics, EXPLAIN output, Actuator metrics, JaCoCo XML/HTML, official npm audit and a final six-scenario fault artifact exist. Stage 8 acceptance smoke and small performance data preparation passed with injected credentials; the full same-parameter replay remains unexecuted, final fault snapshots lack DB facts/authenticated probes, and OWASP failed with dependency findings."
     },
     {
       "name": "runtime_integration_and_recovery_readiness",
@@ -67,11 +67,11 @@
   ],
   "verification": {
     "maven_tests": {
-      "executed": 67,
+      "executed": 69,
       "failed": 0,
       "skipped": 1
     },
-    "stage14_testcontainers": "passed_in_explicit_verify_67_tests_0_failures_0_skips",
+    "stage14_testcontainers": "passed_in_explicit_verify_69_tests_0_failures_0_skips",
     "frontend_typecheck": "passed",
     "frontend_build": "passed_after_route_level_lazy_loading; largest_shared_chunk_747991_bytes_still_above_500KB_warning",
     "compose_config": "passed_with_ephemeral_non_sensitive_test_values;_expected_fail_fast_without_.env",
@@ -84,12 +84,12 @@
     "npm_audit": "official_registry_high_threshold_exit_0_with_2_moderate_0_high_0_critical;full_audit_exit_1",
     "owasp_dependency_check": "executed_but_failed_hosted_suppressions_connection_reset_and_high_risk_dependency_findings",
     "online_dependency_scan": "partially_completed",
-    "full_browser_e2e": "partially_executed_4_passed_5_failed; real_websocket_connected_but_subscribe_failed_before_fix_reverification",
+    "full_browser_e2e": "acceptance_profile_executed_6_passed_3_failed; duplicate_submit_assertion_and_real_stomp_notification_recovery_failed",
     "stage5_fault_injection": "redis_passed_rabbit_container_recovery_passed_minio_failed_upload_and_recovery_passed; rabbit_real_retry_dlq_replay_mysql_restart_and_browser_websocket_reconnect_incomplete",
     "stage6_kind_production_like": "base_and_overlay_kustomize_passed; backend_2_frontend_1_local_edge_1_rollouts_passed; prior_https_home_and_api_health_200_and_wss_upgrade_101; no_ingress_controller_and_stomp_notification_e2e_unverified",
     "stage7_final_fault_injection": "all_six_stop_start_scenarios_executed_without_volume_operation; health_recovered; authenticated_probe_and_db_fact_counts_not_collected",
-    "stage7_performance_replay": "blocked_by_missing_TASKFLOW_PERF_ADMIN_PASSWORD",
-    "stage7_browser_e2e": "1_failed_8_not_run_due_missing_E2E_ADMIN_PASSWORD_and_E2E_TEST_USER_PASSWORD"
+    "stage7_performance_replay": "stage8_acceptance_credentials_unblocked_small_prepare; full_same_parameter_replay_not_run",
+    "stage7_browser_e2e": "stage8_acceptance_profile_6_passed_3_failed_with_shared_TASKFLOW_ACCEPTANCE_credentials"
   },
   "production_gate_blockers": [
     "external_secret_injection_rotation_and_audit_not_completed",

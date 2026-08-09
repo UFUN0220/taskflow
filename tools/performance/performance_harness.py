@@ -28,7 +28,6 @@ from typing import Any, Callable
 
 
 SUCCESS_CODE = "0"
-DEFAULT_PASSWORD = os.environ.get("TASKFLOW_PERF_USER_PASSWORD", "PerfUser-2026!")
 SCENARIOS = ("login", "task_list", "task_detail", "task_create", "state_update", "notification_list")
 
 
@@ -373,9 +372,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="TaskFlow 阶段15数据准备和HTTP压测工具")
     parser.add_argument("command", choices=("prepare", "run"))
     parser.add_argument("--base-url", default=os.environ.get("TASKFLOW_PERF_BASE_URL", "http://localhost:8080"))
-    parser.add_argument("--admin-login", default=os.environ.get("TASKFLOW_PERF_ADMIN_LOGIN", "admin"))
-    parser.add_argument("--admin-password", default=os.environ.get("TASKFLOW_PERF_ADMIN_PASSWORD", ""))
-    parser.add_argument("--user-password", default=DEFAULT_PASSWORD)
+    parser.add_argument("--admin-login", default=os.environ.get("TASKFLOW_ACCEPTANCE_ADMIN_USERNAME", ""))
+    parser.add_argument("--admin-password", default=os.environ.get("TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD", ""))
+    parser.add_argument("--user-password", default=os.environ.get("TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD", ""))
     parser.add_argument("--departments", type=int, default=10)
     parser.add_argument("--users", type=int, default=100)
     parser.add_argument("--tasks", type=int, default=1000)
@@ -393,8 +392,12 @@ def main() -> int:
     args = build_parser().parse_args()
     if min(args.departments, args.users, args.tasks, args.concurrency) < 1:
         raise SystemExit("departments/users/tasks/concurrency 必须大于 0")
+    if not args.admin_login:
+        raise SystemExit("请通过 --admin-login 或 TASKFLOW_ACCEPTANCE_ADMIN_USERNAME 提供管理员用户名")
     if not args.admin_password:
-        raise SystemExit("请通过 --admin-password 或 TASKFLOW_PERF_ADMIN_PASSWORD 提供管理员密码")
+        raise SystemExit("请通过 --admin-password 或 TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD 提供管理员密码")
+    if not args.user_password:
+        raise SystemExit("请通过 --user-password 或 TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD 提供性能测试用户密码")
     client = ApiClient(args.base_url, timeout=args.timeout_seconds)
     try:
         if args.command == "prepare":

@@ -5,10 +5,10 @@ type Session = { token: string; userId: number }
 type UserSummary = { userId: number; version: number; status: string }
 type TaskSummary = { taskId: number; taskNo: string; title: string; status: string; version: number }
 
-const adminUsername = process.env.E2E_ADMIN_USERNAME ?? 'admin'
-const adminPassword = process.env.E2E_ADMIN_PASSWORD
-const e2eUserPassword = process.env.E2E_TEST_USER_PASSWORD
-const runId = process.env.E2E_RUN_ID ?? String(Date.now())
+const adminUsername = process.env.TASKFLOW_ACCEPTANCE_ADMIN_USERNAME
+const adminPassword = process.env.TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD
+const e2eUserPassword = process.env.TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD
+const runId = process.env.TASKFLOW_ACCEPTANCE_RUN_ID ?? String(Date.now())
 const taskPrefix = `TASKFLOW_E2E_${runId}`
 
 let api: APIRequestContext
@@ -17,10 +17,11 @@ let e2eUser: { username: string; password: string; userId: number; version: numb
 const createdTaskIds: number[] = []
 
 test.beforeAll(async () => {
-  if (!adminPassword) throw new Error('E2E_ADMIN_PASSWORD must be supplied; no password is stored in the repository')
-  if (!e2eUserPassword) throw new Error('E2E_TEST_USER_PASSWORD must be supplied; no password is stored in the repository')
+  if (!adminUsername) throw new Error('TASKFLOW_ACCEPTANCE_ADMIN_USERNAME must be supplied; no credential is stored in the repository')
+  if (!adminPassword) throw new Error('TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD must be supplied; no password is stored in the repository')
+  if (!e2eUserPassword) throw new Error('TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD must be supplied; no password is stored in the repository')
 
-  api = await playwrightRequest.newContext({ baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173' })
+  api = await playwrightRequest.newContext({ baseURL: process.env.TASKFLOW_ACCEPTANCE_BASE_URL ?? process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173' })
   adminSession = await loginApi(adminUsername, adminPassword)
   const username = `e2e_${runId}`
   const created = await api.post('/api/users', {

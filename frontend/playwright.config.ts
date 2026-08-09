@@ -15,7 +15,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   outputDir: 'test-results',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173',
+  baseURL: process.env.TASKFLOW_ACCEPTANCE_BASE_URL ?? process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173',
     ...devices['Desktop Chrome'],
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',

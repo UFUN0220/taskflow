@@ -13,10 +13,11 @@
 1. Redis 会话、后端登出、HTTP/WebSocket 会话撤销和登录失败限流已实现；真实 Compose“登录-登出-旧 Token 失效”和限流烟测均通过。
 2. 阶段 14 的 Testcontainers 专用测试已通过；Testcontainers 1.21.4 成功启动 MySQL、Redis、RabbitMQ、MinIO，并完成全新 MySQL 的 8 条 Flyway 迁移。
 3. 已在 Kind 本地集群 `dev`/`kind-dev` 完成前后端 Deployment 调度、探针、滚动更新、Pod 故障恢复和 Service 端口转发健康检查验收。
-4. 阶段 15 已生成固定参数下的性能、运行时指标和 EXPLAIN 报告；阶段 4 完成了前端路由懒加载和新的运行时/EXPLAIN 采集，但同参数性能复测因原管理员凭据不可用而阻塞；这些数字只代表当前 Windows 11 本机，不代表生产容量。
+4. 阶段 15 已生成固定参数下的性能、运行时指标和 EXPLAIN 报告；阶段 4 完成了前端路由懒加载和新的运行时/EXPLAIN 采集，阶段 8 已证明性能工具可读取 acceptance 凭据并准备数据，但同参数性能复测尚未执行；这些数字只代表当前 Windows 11 本机，不代表生产容量。
 5. 阶段 5 真实完成 Redis、RabbitMQ、MinIO 的短暂停止/恢复，其中 Redis 会话恢复、MinIO 上传失败后的 FAILED 元数据状态和核心 MySQL 计数不变均有证据；RabbitMQ 真实非法消息到 retry/DLQ/replay、MySQL 本阶段保卷重启和浏览器 WebSocket 重连仍未完成。阶段 1 已完成生产弱 Secret 拒绝、管理面收紧、安全 Header 和 Secret 模板治理；阶段 2 已增加覆盖率门禁、两层 CI 和依赖扫描可见性；阶段 3 已新增并部分执行浏览器 E2E。生产级 Token 存储、TLS/WSS、外部 Secret 轮换、OWASP/NVD 完整扫描和多节点中间件高可用仍未完成。
 6. 阶段 6 完成 Kind `kind-production-like` overlay、ConfigMap/Secret 分层、`taskflow.local` 本地 TLS、`/`/`/api`/`/ws` 路由定义和 namespace 内 HTTPS/WSS 适配器；既有本地证据为 HTTPS 首页/健康接口 200、WSS 升级 101，但当前集群没有 Ingress Controller，STOMP 鉴权/订阅和浏览器通知闭环未重新通过，因此不计为真实生产 Ingress/TLS 或 WebSocket 通知验收。
-7. 阶段 7 按证据重新复验：Maven 默认 67/0/1，Testcontainers verify 67/0/0，JaCoCo 行覆盖率 47.70%，前端 install/build 通过，六服务健康和保卷重启恢复通过，Kind rollout/Pod 恢复通过；管理员登录、完整 E2E、同参数性能复测受凭据缺失阻断，npm 有 2 个 moderate，OWASP 扫描执行但因依赖告警失败。最终评分按更严格的当前证据调整为 80/100。
+7. 阶段 7 按证据重新复验：Maven 默认 67/0/1，Testcontainers verify 67/0/0，JaCoCo 行覆盖率 47.70%，前端 install/build 通过，六服务健康和保卷重启恢复通过，Kind rollout/Pod 恢复通过；其后阶段 8 以隔离 acceptance 环境完成管理员登录 smoke 和 6/9 浏览器 E2E，3 条 WebSocket/重复提交场景仍失败，npm 有 2 个 moderate，OWASP 扫描执行但因依赖告警失败。最终评分按更严格的当前证据保持 80/100。
+8. 调优阶段 8 建立了隔离 acceptance profile、专属六服务 Compose、环境变量凭据注入、BCrypt 动态管理员哈希和 smoke 脚本；本次 acceptance smoke 已真实通过，性能工具已用同一凭据完成少量数据准备。Playwright 真实执行为 6/9 通过、3/9 失败，剩余失败为重复提交按钮断言和 STOMP/通知补拉链路，完整 E2E 与同参数性能复测仍未通过，因此评分保守保持 80/100。
 
 阶段 0 调优冻结记录见[优化基线账本](optimization-baseline-2026-08-09.md)。阶段 1/2 未改变业务 API 契约；阶段 2 增加 JaCoCo、两层 GitHub Actions、npm audit/OWASP 扫描入口和统一门禁文档。阶段 7 实际执行 OWASP/NVD 扫描，但 hosted suppressions 连接重置且依赖告警导致质量门禁失败，未被计为“扫描通过”。
 
@@ -37,11 +38,11 @@
 
 | 维度 | 权重 | 得分 | 加权分 | 评分依据 |
 | --- | ---: | ---: | ---: | --- |
-| 需求覆盖与核心功能 | 15% | 84 | 12.60 | 阶段 0–19 的认证、组织、项目/任务、评论、附件、提醒、通知、审计、前端和部署链路已具备；最终 E2E 因凭据缺失仅 1 项失败、8 项未运行，完整浏览器闭环仍缺失 |
+| 需求覆盖与核心功能 | 15% | 84 | 12.60 | 阶段 0–19 的认证、组织、项目/任务、评论、附件、提醒、通知、审计、前端和部署链路已具备；acceptance E2E 已可重复启动并执行 6/9，仍有 3 条浏览器/通知链路失败，完整闭环仍缺失 |
 | 架构与可解释性 | 15% | 86 | 12.90 | 模块化单体边界清晰，MySQL/Redis/MQ/MinIO 职责明确，状态机、乐观锁、幂等和补偿可解释；生产拓扑仍是本地学习架构 |
 | 安全与数据保护 | 15% | 68 | 10.20 | 已验证后端鉴权、会话撤销、登录窗口限流、权限/数据范围、附件签名校验、prod 弱 Secret 拒绝、安全 Header、管理面收紧、Kind 本地 TLS 和不信任任意转发 Header；Token localStorage、外部 Secret 轮换、真实 Ingress 代理隔离和生产证书链未完成；npm 有 2 个 moderate，OWASP 扫描失败并报告高危依赖 |
-| 测试、构建与回归 | 15% | 84 | 12.60 | Maven 默认 67/0/1，Testcontainers verify 67/0/0，JaCoCo 47.70%，前端 install/typecheck/build、Compose 模板解析和 Kind 验证通过；最终 E2E 为 1 失败、8 未运行，远程 CI 仍未实跑 |
-| 评估可信度与可观测性 | 15% | 80 | 12.00 | 有历史性能、运行时指标、EXPLAIN、Actuator、JaCoCo、npm audit 和最终六场景故障报告；同参数性能复测缺管理员凭据，数据库事实计数未采集，OWASP 结果为失败而非零漏洞 |
+| 测试、构建与回归 | 15% | 84 | 12.60 | Maven 默认 69/0/1，显式 Testcontainers verify 67/0/0，JaCoCo 47.70%，前端 install/typecheck/build、acceptance Compose smoke 通过；Playwright 6/9，3 条重复提交/WebSocket 场景失败，远程 CI 仍未实跑 |
+| 评估可信度与可观测性 | 15% | 80 | 12.00 | 新增无人工凭据依赖的 acceptance smoke 和性能数据准备证据；完整同参数性能复测仍未执行，数据库事实计数未采集，OWASP 结果为失败而非零漏洞 |
 | 运行集成与恢复就绪度 | 15% | 80 | 12.00 | Compose 六服务健康和保卷重启通过，Redis/RabbitMQ/MinIO/MySQL/backend 精确容器重启演练执行，Kind overlay rollout 与 backend Pod 恢复通过；故障快照无 DB 计数，WSS/STOMP 本轮未复验，中间件仍单实例 |
 | 工程治理 | 5% | 68 | 3.40 | 已有 fast-check/integration-security 两层 CI、JaCoCo 门禁、扫描策略和 advisory/阻断规则；远程 integration-security 曾因 `./mvnw` mode 100644 返回 exit code 126，修复后尚未重新执行，actionlint 和完整分支保护仍未验证 |
 | 文档与交付可信度 | 5% | 94 | 4.70 | README、CHANGELOG、阶段文档、最终摘要、中文面试材料和本报告已同步，明确区分本地证据与生产边界 |
@@ -57,22 +58,25 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `.\mvnw.cmd test` | 通过：67 项执行，失败 0，跳过 1 |
+| `.\mvnw.cmd test` | 通过：69 项执行，失败 0，跳过 1 |
 | `frontend\npm run build` | 通过：TypeScript 检查和 Vite 构建通过 |
 | `docker compose config --quiet` | 无 `.env` 时按必填 Secret fail-fast；使用仅存在于当前进程的非敏感测试值解析通过 |
 | `kubectl kustomize k8s` | 通过 |
 | `kubectl kustomize k8s\overlays\kind-production-like` | 通过：prod profile、health 管理面、TLS 路由和不覆盖 Secret 的边界可渲染 |
 | `.\mvnw.cmd '-Dtaskflow.integration=true' verify` | 通过：JaCoCo HTML/XML 生成，覆盖率门禁通过；最终总行覆盖率 47.70%，核心类门槛 45% |
-| `Testcontainers` 集成结果 | 上述显式 verify 共 67 项执行，失败 0，跳过 0；完成 8 条 Flyway 迁移 |
+| `Testcontainers` 集成结果 | 上述显式 verify 共 69 项执行，失败 0，跳过 0；完成 8 条 Flyway 迁移 |
+| `docker compose -f docker-compose.acceptance.yml config --quiet` | 通过：使用仅存在于当前进程的非敏感占位值解析；无变量时按设计 fail-fast |
+| `scripts/acceptance-check.ps1` | 通过：health、管理员登录、`/api/auth/me`、任务列表、登出、旧会话 401 |
+| `python tools/performance/performance_harness.py prepare --departments 1 --users 1 --tasks 1` | 通过：使用同一 acceptance 管理员/测试用户变量，生成 `docs/performance-acceptance-prepare-2026-08-09.json`；未输出密码或 Token |
 | `npm audit --audit-level=high --registry=https://registry.npmjs.org --json` | 退出码 0：2 个 moderate，high 0，critical 0；无门槛的全量 audit 因 moderate 返回退出码 1 |
 | `.\mvnw.cmd -Psecurity-scan -DskipTests verify` | 失败：约 2 分钟，hosted suppressions 连接重置且扫描报告高危依赖，不能计为扫描通过 |
 | GitHub Actions YAML | 通过 PyYAML 语法解析；远程 integration-security 曾因 Maven Wrapper 权限 exit 126 失败，已修复 workflow 和 executable bit，尚待远程重跑 |
 
-默认命令唯一跳过的是 `Stage14ContainerEnvironmentTest`。该测试默认关闭，必须显式设置 `taskflow.integration=true`；阶段 7 显式 verify 已执行 67 项、0 失败、0 跳过，并完成全新 MySQL 的 8 条 Flyway 迁移。
+默认命令唯一跳过的是 `Stage14ContainerEnvironmentTest`。该测试默认关闭，必须显式设置 `taskflow.integration=true`；阶段 8 显式 verify 已执行 69 项、0 失败、0 跳过，并完成全新 MySQL 的 8 条 Flyway 迁移。
 
 阶段 4 前端构建通过，并对 Dashboard、Login、Management、Task 使用路由级懒加载。旧入口 JS 为 1,156,965 bytes，新构建最大共享 chunk 为 747,991 bytes，入口相关 chunk 下降约 35.38%；但最大 chunk 仍超过 Vite 默认 500 KB 提示阈值，且没有首屏网络抓包，因此不把它描述为总传输量或用户体验已改善。完整对比见 `docs/performance-comparison-2026-08.md`。
 
-阶段 15 原有本地性能基线已完成：10 个部门、100 个用户、1000 个任务，20 并发，预热 10 秒，采样 60 秒；登录、任务列表、任务详情、任务创建、状态更新和通知列表六个场景均为 0 错误。阶段 4 新增运行时快照和 EXPLAIN，但同参数优化后复测未完成：原管理员凭据不可用，员工账号会改变数据范围和写权限，因此没有生成不可比的 QPS/p95/p99 结果。详见 `docs/performance-baseline-after-optimization.json`、`docs/performance-runtime-after-optimization.json`、`docs/performance-explain-after-optimization.txt` 和 `docs/performance-comparison-2026-08.md`。
+阶段 15 原有本地性能基线已完成：10 个部门、100 个用户、1000 个任务，20 并发，预热 10 秒，采样 60 秒；登录、任务列表、任务详情、任务创建、状态更新和通知列表六个场景均为 0 错误。阶段 8 已用 acceptance 管理员完成少量性能数据准备，证明脚本不再依赖人工数据库密码；完整 10/100/1000 同参数优化后复测仍未执行，因此没有生成新的 QPS/p95/p99 结论。详见 `docs/performance-baseline-after-optimization.json`、`docs/performance-runtime-after-optimization.json`、`docs/performance-explain-after-optimization.txt` 和 `docs/performance-comparison-2026-08.md`。
 
 阶段 2 的依赖与质量门禁详细记录见[依赖安全与质量门禁记录](dependency-security-report.md)。
 
@@ -91,9 +95,9 @@
 
 ### 3.5 浏览器 E2E
 
-阶段 3 新增 Playwright 9 个浏览器场景，最后一次现有 Compose 后端 + 源码前端 + Chromium 的可复核结果为 **4 通过、5 失败**。登录、401、403、登出失效通过；任务写入/更新、重复提交、附件和通知场景受到前置定位/运行环境问题影响。浏览器真实创建了 `/ws/notifications` 并收到 STOMP `CONNECTED`，但 SUBSCRIBE 后收到服务端 `ERROR` 并以 1002 关闭，因此不能计为真实 WebSocket 通知通过。
+阶段 3 新增 Playwright 9 个浏览器场景。阶段 8 使用隔离 acceptance Compose 和统一环境变量真实执行，结果为 **6 通过、3 失败**：登录、401、403、任务真实写入/更新、登出失效和附件通过；重复提交按钮禁用断言失败，真实 STOMP 通知和断线补拉失败。失败截图、视频和 trace 保存在 `frontend/test-results/`，因此不能计为 9/9 或完整 WebSocket 通知闭环。
 
-本阶段已修正登录完成等待、Modal 提交定位、测试标题隔离，并为后续 STOMP 帧补充会话 Principal 传播和后端回归测试。修复后的完整浏览器复验因临时本地后端无法使用现有数据库管理员密码而未完成；不得将代码修复或单元测试升级为浏览器 E2E 绿灯。失败截图、视频和 trace 保存在 `frontend/test-results/`，具体矩阵见 [`docs/e2e-browser-report-2026-08-09.md`](e2e-browser-report-2026-08-09.md)。
+本阶段已修正登录完成等待、Modal 提交定位、测试标题隔离，并为后续 STOMP 帧补充会话 Principal 传播和后端回归测试。阶段 8 已消除“人工管理员凭据”这一启动阻塞，但暴露出的 3 条真实浏览器失败仍需修复；不得将 acceptance smoke、后端测试或部分 E2E 升级为完整浏览器绿灯。失败截图、视频和 trace 保存在 `frontend/test-results/`，具体矩阵见 [`docs/e2e-browser-report-2026-08-09.md`](e2e-browser-report-2026-08-09.md)。
 
 ### 3.2 Compose 运行态
 
@@ -160,9 +164,9 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 | 10 | RabbitMQ 手动 Ack、有限重试、死信和通知幂等具备 | RabbitMQ 容器恢复实测；真实消息 retry/DLQ/replay 未完成 |
 | 11 | STOMP JWT、用户目的地、断线清理和通知补拉具备 | 代码/单元测试通过；既有浏览器握手后订阅失败，本阶段未新增重连证据 |
 | 12 | 审计、Trace、敏感值排除和健康探针具备 | 通过当前范围 |
-| 13 | React 核心页面、401 处理、重复提交保护和通知中心具备 | 基本通过；浏览器 E2E 4/9，完整交互仍未通过 |
-| 14 | 回归测试体系、Testcontainers 和 Playwright 入口具备 | 代码/后端回归通过；浏览器 E2E 仍未全通过 |
-| 15 | 性能数据准备、六个 HTTP 场景、EXPLAIN 和运行时观测 | 原固定参数基线通过；阶段 4 前端拆分、SQL 复核和运行时采集完成，同参数优化后复测因管理员凭据阻塞，生产容量未验证 |
+| 13 | React 核心页面、401 处理、重复提交保护和通知中心具备 | 基本通过；acceptance 浏览器 E2E 6/9，重复提交/WebSocket 交互仍未通过 |
+| 14 | 回归测试体系、Testcontainers 和 Playwright 入口具备 | 代码/后端回归和 acceptance smoke 通过；浏览器 E2E 6/9，仍未全通过 |
+| 15 | 性能数据准备、六个 HTTP 场景、EXPLAIN 和运行时观测 | 原固定参数基线通过；阶段 8 acceptance 数据准备通过，同参数优化后完整复测未执行，生产容量未验证 |
 | 16 | 六服务 Compose、健康检查、持久卷和重启恢复具备 | Redis/RabbitMQ/MinIO 短恢复实测；MySQL 本阶段未复验，既有保卷重启证据保留 |
 | 17 | 应用层 Kubernetes 清单、探针、双副本和滚动策略 | Kind `dev` 实机部署、健康、恢复和滚动重启通过 |
 | 6（调优阶段） | Kind 生产样式 Ingress/TLS、可信代理、配置分层 | Kustomize、overlay、rollout、HTTPS 和 WSS 握手通过；无 Ingress Controller，STOMP/浏览器通知闭环未通过，不计生产验收 |
@@ -191,7 +195,7 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 - prod 已关闭 Swagger/OpenAPI、仅开放 Actuator health 配置，前端 Nginx 只代理精确健康路径；真实生产网络隔离和管理面专用入口仍未验证。
 - Kind 本地 edge 已验证 HTTPS 首页、`/api/health` 和 WSS 101 握手；生产部署仍必须使用受控 Ingress/反向代理、真实证书链、可信代理边界和安全 Header 策略。STOMP 通知闭环尚未通过。
 - MySQL、Redis、RabbitMQ、MinIO 在本地拓扑中均为单实例，Kubernetes 只托管前后端应用层，不构成生产高可用。
-- npm 官方 audit 已执行并发现 2 个 moderate；OWASP Dependency-Check 已执行但因 hosted suppressions 连接重置和高危依赖告警失败，不能描述为零漏洞；阶段 15 已有本机性能基线，但最终同参数复测因管理员凭据缺失未完成。
+- npm 官方 audit 已执行并发现 2 个 moderate；OWASP Dependency-Check 已执行但因 hosted suppressions 连接重置和高危依赖告警失败，不能描述为零漏洞；阶段 15 已有本机性能基线，阶段 8 仅完成 acceptance 小规模数据准备，最终同参数复测尚未完成。
 
 ## 6. 高优先级问题清单
 
@@ -204,7 +208,7 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 | P0 | MySQL、Redis、RabbitMQ、MinIO 仍为单实例 | 无法满足生产故障域和数据服务高可用 | 明确目标 HA 拓扑，完成备份/恢复、故障切换和消息积压演练 |
 | P1 | 只有窗口限流，尚无账号锁定/验证码升级 | 公开部署仍需更强的密码猜测防护 | 保留按账号和来源限流，同时补充锁定、验证码升级、审计和生产策略 |
 | P1 | OWASP 扫描失败且输出高危依赖告警；npm 有 2 个 moderate | 当前依赖风险不能作为生产门禁通过 | 按报告逐项核实、升级或经审查抑制，再运行完整 Maven/npm 扫描并保存结果 |
-| P2 | 前端最大共享 chunk 仍偏大、浏览器 E2E 尚未全通过、优化后压测未复测、故障闭环证据不完整 | 首屏、真实交互、性能变化和消息恢复仍未闭环量化 | 注入受控测试凭据完成 9/9 场景和真实 STOMP `MESSAGE`；补 Rabbit retry/DLQ/replay、数据库事实快照和同参数性能对比 |
+| P2 | 前端最大共享 chunk 仍偏大、3 条浏览器 E2E 失败、优化后压测未复测、故障闭环证据不完整 | 首屏、真实交互、性能变化和消息恢复仍未闭环量化 | 修复重复提交和真实 STOMP/补拉失败；补 Rabbit retry/DLQ/replay、数据库事实快照和同参数性能对比 |
 
 ## 7. 交付判定
 
@@ -212,14 +216,14 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 | --- | --- | --- |
 | 本地学习与功能演示 | **通过当前范围** | Compose 六服务健康与保卷重启通过，health/401/非法凭据烟测通过，Kind 应用层 rollout/Pod 恢复通过；阶段 6 既有本地 HTTPS/WSS 传输证据保留 |
 | 面试项目与中文材料 | **通过当前范围** | 阶段 19 材料已按本报告证据更新，明确个人贡献和未验证边界 |
-| 本地工程基线 | **有条件通过，80/100** | 后端、Testcontainers、前端构建、Compose、Kind 和容器重启演练有新证据；E2E、同参数性能、认证成功链路和依赖风险仍未闭环 |
+| 本地工程基线 | **有条件通过，80/100** | acceptance 认证 smoke 和统一凭据链路新增证据；3 条 E2E、同参数性能和依赖风险仍未闭环 |
 | 生产发布 | **不通过** | 外部 Secret/TLS 轮换、Token、真实 Ingress/代理、单实例中间件、依赖告警治理、目标环境容量和完整 E2E 尚未满足门禁 |
 
 ### 可以对外描述的事实
 
 - 这是一个可在本地 Compose 环境启动的 Java 17 + React 模块化单体任务协同平台。
 - 已实现任务、项目、权限、数据范围、附件、提醒、RabbitMQ 通知、WebSocket 通知中心、审计和本地部署等完整学习链路。
-- 最终默认回归为 67 项执行、0 失败、1 项可选 Testcontainers 测试跳过；显式 verify 为 67 项执行、0 失败、0 跳过；JaCoCo 行覆盖率 47.70%，前端 install/typecheck/build、Compose 六服务健康与保卷重启、Kind rollout/Pod 恢复均有新证据。浏览器 E2E 最终因凭据缺失为 1 失败、8 未运行，同参数性能复测也因管理员凭据缺失阻断，不能描述为全链路或性能优化已验证通过。
+- 阶段 8 后默认回归为 69 项执行、0 失败、1 项可选 Testcontainers 测试跳过；显式 verify 为 69 项执行、0 失败、0 跳过；JaCoCo 行覆盖率 47.70%，前端 install/typecheck/build、acceptance 六服务健康、认证 smoke 和性能数据准备均有新证据。浏览器 E2E 为 6/9，3 条重复提交/WebSocket 场景失败；完整性能复测仍未完成，不能描述为全链路或性能优化已验证通过。
 - 任务状态机、乐观锁、消息幂等、有限重试、死信补偿和 MinIO 元数据分离是项目中可以重点讲解的工程设计。
 
 ### 当前不能对外描述的事实
@@ -237,6 +241,6 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 
 1. 优先关闭 P0：Secret 管理、Token 存储策略、真实 TLS/WSS/Ingress 和中间件高可用。
 2. 优先治理 OWASP 高危告警与 React Router moderate advisory，再运行完整依赖扫描和回归。
-3. 注入受控测试凭据，完成 9/9 浏览器 E2E、认证/登出烟测、同参数性能复测及 Rabbit/DLQ/数据库事实快照。
+3. 修复 3 条 acceptance 浏览器失败，完成 9/9 E2E、同参数性能复测及 Rabbit/DLQ/数据库事实快照。
 
 本报告不替代各阶段技术文档；它是当前项目是否适合演示、面试或继续生产化推进的总判断入口。

@@ -1,5 +1,13 @@
 # Changelog
 
+## 调优阶段 8：确定性验收环境 - 2026-08-09
+
+- 新增隔离的 `acceptance` Spring profile 和独立 `docker-compose.acceptance.yml`，使用专属命名卷，不删除现有开发卷。
+- 新增仅在 `acceptance` profile 激活的验收管理员初始化器：凭据由环境变量注入，使用 BCrypt 动态生成密码哈希，可重复创建/对齐角色，不参与 dev/prod。
+- Playwright 与性能工具统一读取 `TASKFLOW_ACCEPTANCE_*` 凭据变量，移除仓库内和脚本内的测试密码默认值。
+- 新增 `scripts/acceptance-up.ps1`、`acceptance-check.ps1` 和 `acceptance-down.ps1`，自动验证健康、登录、`/api/auth/me`、任务列表、登出及旧会话失效。
+- 新增 `docs/acceptance-environment.md`，明确 CI 注入方式、生产 profile 不创建测试账号和未验证项；本阶段不改变业务 API 契约。
+
 ## GitHub Actions exit code 126 修复 - 2026-08-09
 
 - 修复 Linux runner 直接执行 `./mvnw` 的 exit code 126：`mvnw` Git mode 从 `100644` 修复为 `100755`，workflow 同时使用 `bash ./mvnw`，不再依赖 Windows 工作区的 executable bit。
