@@ -6,7 +6,7 @@
 
 Stage 14 adds regression coverage for authentication/token rejection, RBAC and data scope, task state transitions, optimistic concurrency, notification idempotency, reminder cancellation/recovery, attachment authorization, and audit consistency. An opt-in Testcontainers smoke test is available for fresh MySQL/Flyway, Redis, RabbitMQ, and MinIO infrastructure.
 
-Stage 15 adds repeatable performance data preparation, six HTTP benchmark scenarios, protected runtime metric collection, and EXPLAIN templates. A local baseline is recorded under `docs/`; numbers remain environment-specific and are not production capacity claims.
+Stage 15 adds repeatable performance data preparation, six HTTP benchmark scenarios, protected runtime metric collection, and EXPLAIN templates. Stage 4 adds route-level frontend lazy loading and broader HTTP/HikariCP/RabbitMQ/Redis runtime evidence. A local baseline is recorded under `docs/`; numbers remain environment-specific and are not production capacity claims. The comparable post-optimization replay is currently blocked because the original administrator credential is unavailable; no substitute employee-account result is treated as a performance comparison.
 
 Stage 16 adds backend/frontend Dockerfiles, a full six-service Compose deployment, health checks, persistent volumes, environment-driven container addresses, and safe initialization/cleanup scripts.
 
@@ -26,7 +26,7 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 2026-08-09 全面验收结论：项目可在本地 Compose 环境运行和演示；认证撤销、登录限流代码及测试已补齐，阶段 1 后端回归为 66 项执行、0 失败、1 项跳过，前端生产构建和安全配置静态校验通过，真实旧 Token 失效烟测通过。阶段 15 已完成固定本地数据规模下的性能基线与运行时采集，阶段 17 已在 Kind `dev` 集群完成前后端部署、探针、Pod 恢复和滚动重启验证；这些结果均不等同于生产容量或生产高可用。Token localStorage、TLS/WSS、集中式 Secret 管理、在线依赖扫描和完整浏览器 E2E 等生产基线仍不完整，项目暂不判定为生产就绪。详见[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
-参考 PriceSight 项目采用的加权验收方法，本项目阶段 2 后评分建议为 **81/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。阶段 2 将后端覆盖率、Testcontainers CI 触发、前端 typecheck/build 和依赖风险可见性纳入门禁；OWASP/NVD 未完成、localStorage、TLS/WSS、集中式密钥管理等未完成项不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
+参考 PriceSight 项目采用的加权验收方法，本项目阶段 4 后评分建议仍为 **81/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。阶段 4 已完成路由级懒加载、SQL/索引复核和运行时指标扩展，但同参数优化后压测因原管理员凭据不可用而未完成，因此不机械加分；OWASP/NVD 未完成、localStorage、TLS/WSS、集中式密钥管理等未完成项也不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
 
 ## 技术栈
 
@@ -169,6 +169,7 @@ JaCoCo 报告位于 `target/site/jacoco/`。Windows PowerShell 中必须给 `-Dt
 - [阶段 14 自动化测试](docs/stage14-testing.md)
 - [阶段 3 浏览器 E2E 验收记录](docs/e2e-browser-report-2026-08-09.md)
 - [阶段 15 性能工具](docs/performance.md)
+- [阶段 4 性能优化对比](docs/performance-comparison-2026-08.md)
 - [阶段 16 Docker Compose 部署](docs/deployment.md)
 - [阶段 17 Kubernetes 本地部署](docs/k8s-local.md)
 - [阶段 18 安全和质量审查](docs/stage18-security-quality.md)

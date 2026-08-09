@@ -41,7 +41,7 @@
       "weight": 15,
       "score": 80,
       "weighted_score": 12.0,
-      "evidence": "A fixed local performance baseline, runtime metrics, EXPLAIN output, Actuator metrics, JaCoCo XML/HTML and dependency-scan evidence exist; official npm audit completed, while OWASP/NVD timed out and target-environment replay remains pending."
+  "evidence": "A fixed local performance baseline, a new protected HTTP/HikariCP/Executor/JVM/RabbitMQ/Redis runtime snapshot, before/after EXPLAIN output, Actuator metrics, JaCoCo XML/HTML and dependency-scan evidence exist; official npm audit completed, while OWASP/NVD timed out and the same-parameter post-optimization replay is blocked by unavailable administrator credentials."
     },
     {
       "name": "runtime_integration_and_recovery_readiness",
@@ -73,11 +73,14 @@
     },
     "stage14_testcontainers": "passed",
     "frontend_typecheck": "passed",
-    "frontend_build": "passed_with_existing_large_chunk_warning",
+    "frontend_build": "passed_after_route_level_lazy_loading; largest_shared_chunk_747991_bytes_still_above_500KB_warning",
     "compose_config": "passed_with_ephemeral_non_sensitive_test_values;_expected_fail_fast_without_.env",
     "kind_cluster": "dev_ready",
     "kind_application_layer": "backend_2_of_2_frontend_1_of_1_health_recovery_and_rolling_restart_passed",
-    "performance_baseline": "six_scenarios_zero_errors_on_local_windows_11_run",
+    "performance_baseline": "original_six_scenario_baseline_zero_errors_on_local_windows_11_run; stage4_same_parameter_replay_blocked_by_admin_credential",
+    "stage4_frontend_bundle": "old_entry_1156965_bytes_to_largest_shared_chunk_747991_bytes; route_chunks_emitted; no_total_transfer_reduction_claim",
+    "stage4_runtime_metrics": "protected_actuator_hikari_executor_jvm_rabbitmq_and_redis_snapshot_recorded",
+    "stage4_sql_explain": "task_and_notification_plans_and_existing_indexes_recorded; no_new_flyway_index_migration",
     "npm_audit": "official_registry_passed_2_moderate_0_high_0_critical",
     "owasp_dependency_check": "configured_but_timed_out_before_report_generation",
     "online_dependency_scan": "partially_completed",
@@ -87,7 +90,7 @@
     "external_secret_injection_rotation_and_audit_not_completed",
     "localStorage_token_and_incomplete_tls_wss_management_plane_boundary",
     "single_instance_mysql_redis_rabbitmq_minio_topology",
-    "owasp_nvd_dependency_scanning_and_target_environment_performance_replay",
+    "owasp_nvd_dependency_scanning_and_same_parameter_post_optimization_performance_replay",
     "incomplete_full_browser_e2e_and_frontend_bundle_optimization"
   ],
   "artifacts": [
@@ -98,6 +101,10 @@
     "docs/security.md",
     "docs/stage18-security-quality.md",
     "docs/dependency-security-report.md",
-    "docs/e2e-browser-report-2026-08-09.md"
+    "docs/e2e-browser-report-2026-08-09.md",
+    "docs/performance-baseline-after-optimization.json",
+    "docs/performance-runtime-after-optimization.json",
+    "docs/performance-explain-after-optimization.txt",
+    "docs/performance-comparison-2026-08.md"
   ]
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 阶段 4 性能与可观测性调优 - 2026-08-09
+
+- 为 Dashboard、Login、Management 和 Task 路由增加懒加载；前端构建通过，旧入口 JS 1,156,965 bytes，新最大共享 chunk 747,991 bytes，下降约 35.38%，但仍保留 Vite 500 KB 提示，未声称总传输量下降。
+- 复核任务列表、通知列表 SQL、批量负责人查询和现有索引；当前 EXPLAIN 不足以证明需要新增索引，因此没有添加 Flyway migration。
+- 扩展运行时采集至 HTTP、HikariCP、Executor、JVM、RabbitMQ 和 Redis，并新增阶段4运行时、EXPLAIN 和对比报告。
+- 同参数优化后压测因原管理员凭据不可用而阻塞；没有使用员工账号制造不可比的 QPS/p95/p99 结论，项目评分保持 81/100。
+
 ## 阶段 3 浏览器 E2E - 2026-08-09
 
 - 新增 Playwright 9 场景、运行编号隔离夹具、失败截图/视频/trace 保留和真实 STOMP 浏览器观测；修正登录完成等待、Modal 提交定位、标题隔离，并让 WebSocket 后续 STOMP 帧恢复 CONNECT 认证 Principal。当前 Compose 浏览器实测为 4/9 通过，真实订阅仍待修复后复验，详见 `docs/e2e-browser-report-2026-08-09.md`。

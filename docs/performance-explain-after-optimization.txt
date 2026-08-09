@@ -1,0 +1,36 @@
+TaskFlow Platform Stage 4 EXPLAIN evidence
+Captured: 2026-08-09
+Environment: local Docker Compose MySQL; read-only EXPLAIN/SHOW INDEX; no schema or data writes
+
+Commands used:
+EXPLAIN SELECT id, task_no, title, status, due_at, creator_id, project_id, department_id, version FROM task WHERE status = 'DRAFT' ORDER BY id DESC LIMIT 20;
+EXPLAIN SELECT id, user_id, type, title, status, created_at FROM notification WHERE user_id = 1 AND status = 'UNREAD' ORDER BY id DESC LIMIT 20;
+SHOW INDEX FROM task;
+SHOW INDEX FROM notification;
+
+Observed plans:
+
+task list, current local data:
+type=index; possible_keys=idx_task_status_due; key=PRIMARY; rows=26; filtered=7.55; Extra=Using where; Backward index scan
+
+notification list for user_id=1 and status=UNREAD:
+type=index; possible_keys=idx_notification_user_status_created; key=PRIMARY; rows=39; filtered=5.12; Extra=Using where; Backward index scan
+
+Relevant existing indexes:
+task:
+- PRIMARY(id)
+- idx_task_creator_status_created(creator_id, status, created_at)
+- idx_task_project_status_due(project_id, status, due_at)
+- idx_task_department_status_due(department_id, status, due_at)
+- idx_task_status_due(status, due_at)
+
+notification:
+- PRIMARY(id)
+- uk_notification_source_message_user(source_message_id, user_id)
+- idx_notification_user_status_created(user_id, status, created_at)
+
+Interpretation:
+- Both sampled queries use a backward scan of PRIMARY to satisfy ORDER BY id DESC and filter the small local result set. MySQL did not choose the available status/user composite index for this LIMIT and current data distribution.
+- The task list implementation batches assignee loading with one IN query; the notification page is one selectPage query. No N+1 pattern was found in the reviewed list response paths.
+- The EXPLAIN sample does not justify adding another index. No Flyway migration was added in Stage 4. Larger production-like data, alternate filters and deep pagination should be re-tested before changing indexes.
+- This is a local plan snapshot, not a production performance conclusion.

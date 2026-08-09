@@ -3,6 +3,7 @@ param(
     [string]$AccessToken = $env:TASKFLOW_PERF_ACCESS_TOKEN,
     [int]$AppPid = 0,
     [string]$RedisService = "redis",
+    [string]$RedisContainer = "taskflow-platform-redis-1",
     [string]$Output = "docs/performance-runtime.json"
 )
 
@@ -13,14 +14,21 @@ if ($AccessToken) {
 }
 
 $metricNames = @(
+    "http.server.requests",
     "hikaricp.connections.active",
     "hikaricp.connections.idle",
     "hikaricp.connections.pending",
     "hikaricp.connections.max",
+    "hikaricp.connections.usage",
     "executor.active",
     "executor.queued",
     "jvm.gc.pause",
-    "jvm.memory.used"
+    "jvm.memory.used",
+    "rabbitmq.listener",
+    "rabbitmq.connections",
+    "rabbitmq.channels",
+    "rabbitmq.published",
+    "rabbitmq.consumed"
 )
 
 $actuator = [ordered]@{}
@@ -48,9 +56,16 @@ if ($AppPid -gt 0) {
 
 $redis = $null
 try {
-    $redis = (& docker compose exec -T $RedisService redis-cli INFO stats 2>&1 | Out-String).Trim()
+    $redis = (& docker exec $RedisContainer redis-cli INFO stats 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "docker exec failed for $RedisContainer"
+    }
 } catch {
-    $redis = "Redis 采集失败: $($_.Exception.Message)"
+    try {
+        $redis = (& docker compose exec -T $RedisService redis-cli INFO stats 2>&1 | Out-String).Trim()
+    } catch {
+        $redis = "Redis 采集失败: $($_.Exception.Message)"
+    }
 }
 
 $result = [ordered]@{
