@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskflow-config
+data:
+  # Local production-like profile only. Real credentials remain out-of-band.
+  SPRING_PROFILES_ACTIVE: prod
+  SERVER_FORWARD_HEADERS_STRATEGY: none
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE: health
+  WEBSOCKET_ALLOWED_ORIGINS: https://taskflow.local

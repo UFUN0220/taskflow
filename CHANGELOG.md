@@ -1,5 +1,13 @@
 # Changelog
 
+## 阶段 6 Kind 生产样式本地验证 - 2026-08-09
+
+- 新增 `k8s/base` 与 `k8s/overlays/kind-production-like` 配置分层；overlay 使用 prod profile、只暴露 health 管理面，并且不覆盖已注入的 `taskflow-secret`。
+- 新增 `taskflow-edge` 的 `/`、`/api`、`/ws` TLS 路由定义和 `scripts/prepare-kind-tls.ps1`；本地私钥保存在被忽略的 `runtime-secrets`，不提交仓库。
+- 当前 Kind 没有 Ingress Controller，因此增加 namespace 内 `taskflow-local-edge` 仅用于本地 HTTPS/WSS 验证；HTTPS 首页和 `/api/health` 返回 200，WSS Upgrade 返回 101。
+- 重新验证 backend 2 副本、frontend 1 副本、local edge rollout 和健康探针；不把 Kind 单节点结果包装成生产 HA。STOMP 认证/订阅/浏览器通知闭环仍未在本阶段通过。
+- 详细证据见 `docs/kind-production-like-validation.md`，项目评分保持 82/100，生产就绪仍为否。
+
 ## 阶段 5 故障注入与恢复 - 2026-08-09
 
 - 新增 `scripts/fault-injection.ps1`，默认计划模式，只允许对精确的 TaskFlow 容器执行 stop/start，禁止删除卷、清库和 `compose down`。

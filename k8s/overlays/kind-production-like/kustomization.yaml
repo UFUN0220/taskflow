@@ -4,5 +4,9 @@ kind: Kustomization
 namespace: taskflow
 
 resources:
-  - base
-  - base/secret.yaml
+  - ../../base
+  - ingress.yaml
+  - edge.yaml
+
+patches:
+  - path: configmap-patch.yaml

@@ -18,6 +18,8 @@ Stage 18 adds a security and quality review, hardens audit source-address handli
 
 阶段 19 新增基于已验证代码整理的中文面试和简历材料，包括架构图、状态与消息时序图、RBAC 和数据范围说明、50 个项目深挖问题及参考回答、个人贡献边界，以及未经进一步验证不得使用的项目表述。
 
+阶段 6 新增 Kind `kind-production-like` overlay、`taskflow.local` 本地 TLS 证书脚本、`/`/`/api`/`/ws` 路由定义和 namespace 内 HTTPS/WSS 验证 edge。当前集群没有 Ingress Controller，因此仅计为生产样式静态配置和本地 TLS/WSS 握手证据，不计为真实生产 Ingress 或生产 HA。
+
 The backend now includes task draft maintenance, filtered and paginated task queries, primary/collaborator assignment, scoped detail access, batch assignee loading, task operation logs, a fixed task state machine, optimistic concurrency control using old-status-plus-version conditional updates, task comments, MinIO-backed attachment metadata workflows, persistent reminder plans, Redis ZSet scheduling, distributed scanning locks, RabbitMQ reminder publishing, idempotent notification consumers, bounded retries, dead-letter compensation, HTTP notification query APIs, and STOMP over WebSocket user-destination push. Flyway V1 through V8 are designed for a fresh MySQL database.
 
 企业任务协同与流程管理平台，面向学习和校招面试准备，采用模块化单体架构逐阶段实现。
@@ -28,7 +30,7 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 2026-08-09 全面验收结论：项目可在本地 Compose 环境运行和演示；认证撤销、登录限流代码及测试已补齐，阶段 1 后端回归为 66 项执行、0 失败、1 项跳过，前端生产构建和安全配置静态校验通过，真实旧 Token 失效烟测通过。阶段 15 已完成固定本地数据规模下的性能基线与运行时采集，阶段 17 已在 Kind `dev` 集群完成前后端部署、探针、Pod 恢复和滚动重启验证；这些结果均不等同于生产容量或生产高可用。Token localStorage、TLS/WSS、集中式 Secret 管理、在线依赖扫描和完整浏览器 E2E 等生产基线仍不完整，项目暂不判定为生产就绪。详见[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
-参考 PriceSight 项目采用的加权验收方法，本项目阶段 5 后评分建议为 **82/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。阶段 5 真实验证了 Redis、RabbitMQ、MinIO 的部分短故障恢复和 MinIO FAILED 元数据路径，因此有限加分；Rabbit retry/DLQ/replay、MySQL 本阶段重启、浏览器 WebSocket 重连、OWASP/NVD、localStorage、TLS/WSS 和集中式密钥管理等未完成项不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
+参考 PriceSight 项目采用的加权验收方法，本项目阶段 6 后评分建议保持 **82/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。阶段 6 验证了 Kind 生产样式 overlay、配置分层、HTTPS 首页/健康接口和 WSS 101 握手，但当前没有真实 Ingress Controller，STOMP 通知闭环未完成，因此不机械加分。Rabbit retry/DLQ/replay、MySQL 本阶段重启、浏览器 WebSocket 重连、OWASP/NVD、localStorage 和集中式密钥管理等未完成项仍不计入加分。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-09.json)。
 
 ## 技术栈
 
@@ -61,6 +63,15 @@ backend/
 首次执行会从 `.env.example` 创建 `.env`；该模板不再放入可直接使用的密码或 JWT 值，请逐项填写本地开发 Secret 后再启动。生产环境必须使用 `SPRING_PROFILES_ACTIVE=prod` 并提供全部必需 Secret，缺失或弱默认值会 fail-fast。全容器模式包含前端、后端、MySQL、Redis、RabbitMQ、MinIO，默认前端地址为 `http://localhost:5173`。
 
 安全边界：dev 保留本地开发便利配置；test 仅用于测试；prod 默认关闭 Swagger/OpenAPI，仅暴露 Actuator 健康探针，并要求显式的 JWT、数据库、RabbitMQ、MinIO 和 bootstrap admin Secret。当前 REST 和 STOMP 使用显式 Bearer Token，前端 Token 仍保存在 `localStorage`，因此本地 HTTP/WSS 仅适合开发和演示；生产部署还必须由可信反向代理提供 HTTPS/WSS，并在代理边界明确配置。应用默认不信任任意 `X-Forwarded-*`，只有在代理网络边界已确认时才允许调整转发 Header 策略。详见[安全与权限边界](docs/security.md)和[部署说明](docs/deployment.md)。
+
+Kind 生产样式本地验证：
+
+```powershell
+.\scripts\prepare-kind-tls.ps1 -Force
+.\scripts\deploy-k8s.ps1 -Overlay kind-production-like
+```
+
+完整证据和边界见[Kind 生产样式本地验证记录](docs/kind-production-like-validation.md)。
 
 容器内部使用服务名连接：后端连接 `mysql:3306`、`redis:6379`、`rabbitmq:5672`、`minio:9000`；前端 Nginx 代理到 `backend:8080`。宿主机端口默认映射为 MySQL `3307`、Redis `6380`、RabbitMQ `5673`、管理台 `15673`、MinIO `9000/9001`、后端 `8080`、前端 `5173`。
 

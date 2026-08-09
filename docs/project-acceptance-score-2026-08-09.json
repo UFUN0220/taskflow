@@ -27,7 +27,7 @@
       "weight": 15,
       "score": 73,
       "weighted_score": 10.95,
-      "evidence": "Stage 1 security controls remain verified; Stage 2 adds official npm audit visibility with 0 high/critical findings at this lockfile snapshot, while OWASP/NVD did not complete locally and no dependency result is treated as a production security guarantee. localStorage tokens, plaintext local transport, external Secret Manager/rotation, and production proxy isolation remain material gaps."
+      "evidence": "Stage 1 security controls remain verified; Stage 2 adds official npm audit visibility with 0 high/critical findings at this lockfile snapshot; Stage 6 adds local Kind TLS, ConfigMap/Secret separation, and an explicit no-arbitrary-forwarded-header boundary. OWASP/NVD did not complete locally and no dependency result is treated as a production security guarantee. localStorage tokens, external Secret Manager/rotation, real Ingress proxy isolation, and production certificate management remain material gaps."
     },
     {
       "name": "tests_builds_and_regression",
@@ -48,7 +48,7 @@
       "weight": 15,
       "score": 79,
       "weighted_score": 11.85,
-      "evidence": "Redis, RabbitMQ and MinIO short stop/start recovery passed with unchanged observed MySQL facts; six-service Compose health, prior persistent restart, Kind application probes, pod recovery and rolling restart passed. MySQL was not re-injected in Stage 5, browser WebSocket reconnect was not verified, middleware remains single-instance, and there is no production Ingress/TLS/HPA/multi-node HA evidence."
+      "evidence": "Redis, RabbitMQ and MinIO short stop/start recovery passed with unchanged observed MySQL facts; six-service Compose health, prior persistent restart, Kind application probes, pod recovery and rolling restart passed. Stage 6 overlay rollout, local HTTPS and WSS 101 handshake passed, but the cluster has no Ingress Controller and STOMP/browser notification recovery was not verified. MySQL was not re-injected in Stage 5, middleware remains single-instance, and there is no production Ingress controller, HPA or multi-node HA evidence."
     },
     {
       "name": "engineering_governance",
@@ -84,8 +84,9 @@
     "npm_audit": "official_registry_passed_2_moderate_0_high_0_critical",
     "owasp_dependency_check": "configured_but_timed_out_before_report_generation",
     "online_dependency_scan": "partially_completed",
-    "full_browser_e2e": "partially_executed_4_passed_5_failed; real_websocket_connected_but_subscribe_failed_before_fix_reverification"
-    ,"stage5_fault_injection": "redis_passed_rabbit_container_recovery_passed_minio_failed_upload_and_recovery_passed; rabbit_real_retry_dlq_replay_mysql_restart_and_browser_websocket_reconnect_incomplete"
+    "full_browser_e2e": "partially_executed_4_passed_5_failed; real_websocket_connected_but_subscribe_failed_before_fix_reverification",
+    "stage5_fault_injection": "redis_passed_rabbit_container_recovery_passed_minio_failed_upload_and_recovery_passed; rabbit_real_retry_dlq_replay_mysql_restart_and_browser_websocket_reconnect_incomplete",
+    "stage6_kind_production_like": "base_and_overlay_kustomize_passed; backend_2_frontend_1_local_edge_1_rollouts_passed; https_home_and_api_health_200; wss_upgrade_101; no_ingress_controller_and_stomp_notification_e2e_unverified"
   },
   "production_gate_blockers": [
     "external_secret_injection_rotation_and_audit_not_completed",
@@ -111,6 +112,7 @@
     "docs/fault-injection-redis-2026-08-09.json",
     "docs/fault-injection-rabbitmq-2026-08-09.json",
     "docs/fault-injection-minio-2026-08-09.json",
-    "docs/fault-injection-dry-run.json"
+    "docs/fault-injection-dry-run.json",
+    "docs/kind-production-like-validation.md"
   ]
 }

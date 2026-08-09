@@ -31,7 +31,7 @@
 
 ## 配置本地 Secret
 
-`k8s/secret.yaml` 现在只提供空值字段，不能直接作为共享环境配置，也不应把真实值回填提交。应用前请通过本地未提交文件、`kubectl create secret`、Secret Manager 或其他外部注入方式提供以下值：
+`k8s/base/secret.yaml` 现在只提供空值字段，不能直接作为共享环境配置，也不应把真实值回填提交。应用前请通过本地未提交文件、`kubectl create secret`、Secret Manager 或其他外部注入方式提供以下值：
 
 - `DB_USERNAME`、`DB_PASSWORD`；
 - `RABBITMQ_USERNAME`、`RABBITMQ_PASSWORD`；
@@ -39,7 +39,7 @@
 - `TASKFLOW_JWT_SECRET`；
 - 新数据库场景下的 `TASKFLOW_BOOTSTRAP_ADMIN_PASSWORD`。
 
-当前 ConfigMap 明确使用 `SPRING_PROFILES_ACTIVE=dev`，仅适合本地学习。生产应使用单独 overlay/部署平台 Secret，并设置 `SPRING_PROFILES_ACTIVE=prod`；prod 会拒绝缺失或弱 Secret。不要直接 apply 仓库中的空 Secret 模板，也不要把本地 Compose 密码写入 Git。
+当前 `k8s/base` ConfigMap 明确使用 `SPRING_PROFILES_ACTIVE=dev`，仅适合本地学习。生产样式 Kind 验证使用 `k8s/overlays/kind-production-like`，设置 `SPRING_PROFILES_ACTIVE=prod`，并且故意不渲染/覆盖 `taskflow-secret`；prod 会拒绝缺失或弱 Secret。不要直接 apply 仓库中的空 Secret 模板，也不要把本地 Compose 密码写入 Git。
 
 如果连接的是已经初始化过的数据库，bootstrap admin 密码不会覆盖已有 `admin` 用户；登录密码以数据库中当前账号记录为准。
 
@@ -88,7 +88,18 @@ kubectl get nodes
 
 当前 Kind 集群名称为 `dev`；如使用其他集群名称，可传入 `-KindClusterName <name>`。脚本会将本地前后端镜像加载到指定 Kind 集群。脚本已支持 PATH 中没有 `kind`/`kubectl` 时回退到 `F:\newinstall` 下的工具。
 
-脚本会在应用前导入两个本地镜像。若 Minikube 环境不能解析 `host.docker.internal`，请将 `k8s/configmap.yaml` 的 `INFRA_HOST` 改为集群可访问宿主机的地址（常见值为 `host.minikube.internal`），并确保 Compose 端口对该地址可达。
+脚本会在应用前导入两个本地镜像。若 Minikube 环境不能解析 `host.docker.internal`，请通过对应 overlay 的 ConfigMap patch 改为集群可访问宿主机的地址（常见值为 `host.minikube.internal`），并确保 Compose 端口对该地址可达。
+
+## Kind 生产样式本地验证
+
+生成仅用于本机的短期自签证书并应用 overlay：
+
+```powershell
+.\scripts\prepare-kind-tls.ps1 -Force
+.\scripts\deploy-k8s.ps1 -Runtime kind -Overlay kind-production-like -Apply
+```
+
+overlay 定义 `taskflow-edge` 的 `/`、`/api`、`/ws` 路由和 `taskflow-tls` Secret 引用。当前 `kind-dev` 没有 Ingress Controller，因此脚本清单中的 Ingress 只完成静态路由声明；`taskflow-local-edge` 是 namespace 内的 Nginx，仅用于本地 HTTPS/WSS 传输验证。完整结果见 `docs/kind-production-like-validation.md`。
 
 ## 验证滚动更新和自动恢复
 
@@ -112,6 +123,6 @@ kubectl rollout status deployment/backend -n taskflow --timeout=180s
 ## 已知边界
 
 - 本阶段没有部署 MySQL、Redis、RabbitMQ、MinIO 的 Kubernetes StatefulSet；
-- 没有加入 Ingress、HPA、Prometheus 或 Grafana；
+- 没有加入可运行的 Ingress Controller、HPA、Prometheus 或 Grafana；本地 overlay 提供 Ingress 资源和 TLS edge 验证适配器；
 - 清单中的 Secret 是空值模板，只适合生成本地配置结构，不能直接 apply 共享环境，也不能提交真实凭据；
-- 本次只验证了 Kind 单节点上的应用层部署、探针、Pod 恢复和滚动重启；不代表多节点生产高可用、Ingress/TLS、HPA、故障域隔离或中间件高可用。
+- 本次只验证了 Kind 单节点上的应用层部署、探针、Pod 恢复、滚动重启以及本地 edge 的 HTTPS/WSS 握手；不代表多节点生产高可用、真实 Ingress Controller、云 LB、证书轮换、HPA、故障域隔离或中间件高可用。

@@ -6,7 +6,7 @@
 
 最终结论：
 
-> **阶段 5 后项目级评分建议：82/100。结论：本地工程基线有条件通过，可用于学习、演示和面试；生产交付仍不通过。**
+> **阶段 6 后项目级评分建议：82/100。结论：本地工程基线有条件通过，可用于学习、演示和面试；生产交付仍不通过。**
 
 主要原因不是基础功能无法运行；本轮已完成认证、Compose、Kind 应用层、性能基线和部分基础设施故障恢复的本地证据，但仍有以下重要边界：
 
@@ -15,6 +15,7 @@
 3. 已在 Kind 本地集群 `dev`/`kind-dev` 完成前后端 Deployment 调度、探针、滚动更新、Pod 故障恢复和 Service 端口转发健康检查验收。
 4. 阶段 15 已生成固定参数下的性能、运行时指标和 EXPLAIN 报告；阶段 4 完成了前端路由懒加载和新的运行时/EXPLAIN 采集，但同参数性能复测因原管理员凭据不可用而阻塞；这些数字只代表当前 Windows 11 本机，不代表生产容量。
 5. 阶段 5 真实完成 Redis、RabbitMQ、MinIO 的短暂停止/恢复，其中 Redis 会话恢复、MinIO 上传失败后的 FAILED 元数据状态和核心 MySQL 计数不变均有证据；RabbitMQ 真实非法消息到 retry/DLQ/replay、MySQL 本阶段保卷重启和浏览器 WebSocket 重连仍未完成。阶段 1 已完成生产弱 Secret 拒绝、管理面收紧、安全 Header 和 Secret 模板治理；阶段 2 已增加覆盖率门禁、两层 CI 和依赖扫描可见性；阶段 3 已新增并部分执行浏览器 E2E。生产级 Token 存储、TLS/WSS、外部 Secret 轮换、OWASP/NVD 完整扫描和多节点中间件高可用仍未完成。
+6. 阶段 6 完成 Kind `kind-production-like` overlay、ConfigMap/Secret 分层、`taskflow.local` 本地 TLS、`/`/`/api`/`/ws` 路由定义和 namespace 内 HTTPS/WSS 适配器；HTTPS 首页与健康接口通过，WSS 升级返回 101。但当前集群没有 Ingress Controller，STOMP 鉴权/订阅和浏览器通知闭环未重新通过，因此不计为真实生产 Ingress/TLS 或 WebSocket 通知验收。
 
 阶段 0 调优冻结记录见[优化基线账本](optimization-baseline-2026-08-09.md)。阶段 1/2 未改变业务 API 契约；阶段 2 增加 JaCoCo、两层 GitHub Actions、npm audit/OWASP 扫描入口和统一门禁文档。OWASP/NVD 本地扫描超过 5 分钟未生成报告，未被计为“扫描通过”。
 
@@ -37,10 +38,10 @@
 | --- | ---: | ---: | ---: | --- |
 | 需求覆盖与核心功能 | 15% | 86 | 12.90 | 阶段 0–19 的认证、组织、项目/任务、评论、附件、提醒、通知、审计、前端和部署链路已具备；完整浏览器 E2E、病毒扫描等仍缺失 |
 | 架构与可解释性 | 15% | 86 | 12.90 | 模块化单体边界清晰，MySQL/Redis/MQ/MinIO 职责明确，状态机、乐观锁、幂等和补偿可解释；生产拓扑仍是本地学习架构 |
-| 安全与数据保护 | 15% | 73 | 10.95 | 已验证后端鉴权、会话撤销、登录窗口限流、权限/数据范围、附件签名校验、prod 弱 Secret 拒绝、安全 Header 和管理面收紧；npm audit 已形成可见性，Token localStorage、明文本地链路、外部 Secret 轮换、OWASP/NVD 未完成和生产代理隔离仍扣分 |
+| 安全与数据保护 | 15% | 73 | 10.95 | 已验证后端鉴权、会话撤销、登录窗口限流、权限/数据范围、附件签名校验、prod 弱 Secret 拒绝、安全 Header、管理面收紧、Kind 本地 TLS 和不信任任意转发 Header；Token localStorage、外部 Secret 轮换、OWASP/NVD 未完成、真实 Ingress 代理隔离和生产证书链仍扣分 |
 | 测试、构建与回归 | 15% | 88 | 13.20 | Maven 67/0/1、Testcontainers、JaCoCo 报告/门禁、前端 typecheck/build、Compose 模板解析和 Kind 清单/运行验证均有证据；浏览器 E2E 已部分执行但为 4/9，远程 CI 仍未实跑 |
 | 评估可信度与可观测性 | 15% | 82 | 12.30 | 除历史性能、运行时指标、EXPLAIN、Actuator、JaCoCo 和依赖扫描文件外，新增 Redis/RabbitMQ/MinIO 故障前中后快照、MySQL 事实计数对比和 MinIO FAILED 元数据证据；Rabbit retry/DLQ、MySQL/浏览器重连仍未完成，数据仍主要来自单机 |
-| 运行集成与恢复就绪度 | 15% | 79 | 11.85 | Redis、RabbitMQ、MinIO 短暂停止/恢复通过，Compose 六服务健康、既有保卷重启和 Kind 应用恢复通过；MySQL 本阶段未复验，中间件仍是单实例，无 Ingress/TLS/HPA/多节点 HA |
+| 运行集成与恢复就绪度 | 15% | 79 | 11.85 | Redis、RabbitMQ、MinIO 短暂停止/恢复通过，Compose 六服务健康、既有保卷重启和 Kind 应用恢复通过；Kind overlay rollout、HTTPS/WSS 握手通过，但当前无真实 Ingress Controller，MySQL 本阶段未复验，中间件仍是单实例，无 HPA/多节点 HA |
 | 工程治理 | 5% | 68 | 3.40 | 已有 fast-check/integration-security 两层 CI、JaCoCo 门禁、扫描策略和 advisory/阻断规则；远程 workflow 尚未执行，actionlint 和完整分支保护仍未验证 |
 | 文档与交付可信度 | 5% | 92 | 4.60 | README、CHANGELOG、阶段文档、中文面试材料和本报告已同步，明确区分本地证据与生产边界 |
 | **合计** | **100%** |  | **82.10 → 82** | **本地工程基线有条件通过；生产就绪不通过** |
@@ -59,6 +60,7 @@
 | `frontend\npm run build` | 通过：TypeScript 检查和 Vite 构建通过 |
 | `docker compose config --quiet` | 无 `.env` 时按必填 Secret fail-fast；使用仅存在于当前进程的非敏感测试值解析通过 |
 | `kubectl kustomize k8s` | 通过 |
+| `kubectl kustomize k8s\overlays\kind-production-like` | 通过：prod profile、health 管理面、TLS 路由和不覆盖 Secret 的边界可渲染 |
 | `.\mvnw.cmd verify` | 通过：JaCoCo HTML/XML 生成，覆盖率门禁通过；总行覆盖率 47.20%，核心类门槛 45% |
 | `.\mvnw.cmd "-Dtaskflow.integration=true" verify` | 通过：66 项单测/回归 + 1 项 Testcontainers 集成测试，0 失败；完成 8 条 Flyway 迁移 |
 | `npm audit`（官方 registry） | 通过：2 个 moderate，high 0，critical 0；镜像 registry 的 audit API 另有 404，未混淆记录 |
@@ -72,6 +74,8 @@
 阶段 15 原有本地性能基线已完成：10 个部门、100 个用户、1000 个任务，20 并发，预热 10 秒，采样 60 秒；登录、任务列表、任务详情、任务创建、状态更新和通知列表六个场景均为 0 错误。阶段 4 新增运行时快照和 EXPLAIN，但同参数优化后复测未完成：原管理员凭据不可用，员工账号会改变数据范围和写权限，因此没有生成不可比的 QPS/p95/p99 结果。详见 `docs/performance-baseline-after-optimization.json`、`docs/performance-runtime-after-optimization.json`、`docs/performance-explain-after-optimization.txt` 和 `docs/performance-comparison-2026-08.md`。
 
 阶段 2 的依赖与质量门禁详细记录见[依赖安全与质量门禁记录](dependency-security-report.md)。
+
+阶段 6 的 Kind 生产样式本地验证见[Kind 生产样式本地验证记录](kind-production-like-validation.md)。本阶段 HTTPS 首页和 `/api/health` 返回 200，WSS Upgrade 返回 101；由于集群没有 `IngressClass/nginx` 对应的控制器，实际 Ingress 资源没有运行态 ADDRESS，namespace 内 Nginx edge 只作为本地验证适配器。该结果不覆盖云 LB、真实证书轮换、生产 Secret Manager、跨节点 WebSocket 会话或多节点 HA。
 
 ### 3.6 故障注入与恢复
 
@@ -130,7 +134,9 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 - 删除后端 Pod 后 Deployment 自动创建替代 Pod；
 - 前后端滚动重启均成功，Service 通过就绪端点提供访问。
 
-边界：本次只覆盖 Kind 单节点应用层，不覆盖生产多节点高可用、中间件 HA、Ingress/TLS、HPA 或故障域隔离。
+阶段 6 在上述应用层基础上新增 `kind-production-like` overlay：ConfigMap/Secret 分层、prod profile、`taskflow.local` 本地自签 TLS、静态 Ingress `/`/`/api`/`/ws` 路由和 namespace 内 HTTPS/WSS edge。HTTPS 首页与 `/api/health` 返回 200，WSS Upgrade 返回 101。当前集群没有 Ingress Controller，Ingress 资源没有运行态 ADDRESS，因此该 edge 只作为本地传输验证适配器。
+
+边界：本次只覆盖 Kind 单节点应用层和本地 edge，不覆盖生产多节点高可用、中间件 HA、真实 Ingress Controller、云 LB、证书轮换、HPA 或故障域隔离。
 
 ### 3.4 调优基线冻结
 
@@ -158,6 +164,7 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 | 15 | 性能数据准备、六个 HTTP 场景、EXPLAIN 和运行时观测 | 原固定参数基线通过；阶段 4 前端拆分、SQL 复核和运行时采集完成，同参数优化后复测因管理员凭据阻塞，生产容量未验证 |
 | 16 | 六服务 Compose、健康检查、持久卷和重启恢复具备 | Redis/RabbitMQ/MinIO 短恢复实测；MySQL 本阶段未复验，既有保卷重启证据保留 |
 | 17 | 应用层 Kubernetes 清单、探针、双副本和滚动策略 | Kind `dev` 实机部署、健康、恢复和滚动重启通过 |
+| 6（调优阶段） | Kind 生产样式 Ingress/TLS、可信代理、配置分层 | Kustomize、overlay、rollout、HTTPS 和 WSS 握手通过；无 Ingress Controller，STOMP/浏览器通知闭环未通过，不计生产验收 |
 | 18 | 已完成安全质量审查和若干硬化修复 | 部分通过，生产风险仍存在 |
 | 19 | 中文面试/简历材料和事实边界具备 | 通过文档审查 |
 
@@ -179,9 +186,9 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 
 - 当前认证采用无状态 JWT 请求模型，并通过 Redis 活动会话标记补充主动登出和会话失效；这是对阶段 3 原始 Redis 会话要求的兼容实现，真实 Redis 容器行为仍需补验。
 - 前端 Token 放在 `localStorage`；登录接口已增加 Redis 失败限流，但仍没有账号锁定、验证码升级和生产级 Token 存储策略。
-- `.env.example` 和 Kubernetes Secret 模板已改为空值安全模板，Compose 敏感变量改为必填；但外部 Secret Manager、轮换、审计和实际生产注入仍未验证。
+- `.env.example` 和 Kubernetes Secret 模板已改为空值安全模板，Compose 敏感变量改为必填；Kind overlay 不覆盖外部注入的 Secret；但外部 Secret Manager、轮换、审计和实际生产注入仍未验证。
 - prod 已关闭 Swagger/OpenAPI、仅开放 Actuator health 配置，前端 Nginx 只代理精确健康路径；真实生产网络隔离和管理面专用入口仍未验证。
-- 当前 HTTP/WebSocket 为本地明文连接；生产部署必须补齐 TLS/WSS、可信代理和安全 Header 策略。
+- Kind 本地 edge 已验证 HTTPS 首页、`/api/health` 和 WSS 101 握手；生产部署仍必须使用受控 Ingress/反向代理、真实证书链、可信代理边界和安全 Header 策略。STOMP 通知闭环尚未通过。
 - MySQL、Redis、RabbitMQ、MinIO 在本地拓扑中均为单实例，Kubernetes 只托管前后端应用层，不构成生产高可用。
 - 尚未完成在线漏洞数据库驱动的 Maven/npm/OWASP 依赖扫描；阶段 15 已有本机性能基线，但不能外推生产容量。
 
@@ -202,10 +209,10 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 
 | 交付目标 | 判定 | 依据 |
 | --- | --- | --- |
-| 本地学习与功能演示 | **通过当前范围** | Compose 六服务健康，核心 API 烟测通过，Kind 应用层运行与恢复通过 |
+| 本地学习与功能演示 | **通过当前范围** | Compose 六服务健康，核心 API 烟测通过，Kind 应用层运行与恢复通过；生产样式 overlay 的 HTTPS/WSS 传输验证通过 |
 | 面试项目与中文材料 | **通过当前范围** | 阶段 19 材料已按本报告证据更新，明确个人贡献和未验证边界 |
 | 本地工程基线 | **有条件通过，82/100** | 主要测试、构建、部署、性能和部分故障恢复证据已留档；浏览器 E2E、消息 DLQ、MySQL 本阶段重启仍未闭环，安全仍有 P0/P1 项 |
-| 生产发布 | **不通过** | Secret/TLS/Token、单实例中间件、在线扫描、目标环境容量和完整 E2E 尚未满足门禁 |
+| 生产发布 | **不通过** | 外部 Secret/TLS 轮换、Token、真实 Ingress/代理、单实例中间件、在线扫描、目标环境容量和完整 E2E 尚未满足门禁 |
 
 ### 可以对外描述的事实
 
