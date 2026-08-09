@@ -105,7 +105,7 @@ npm run dev
 
 本地模式下 Vite 将 `/api` 和 `/ws` 代理到宿主机 `localhost:8080`。仅启动基础设施时可执行 `docker compose up -d mysql redis rabbitmq minio`。
 
-本项目工具缓存统一放在 F 盘：Maven 用户目录为 `F:\newinstall\maven-user`、本地仓库为 `F:\newinstall\maven-repository`，Gradle 用户目录为 `F:\newinstall\gradle-user-home`，npm 缓存为 `F:\newinstall\npm-cache`。项目 `.mvn/maven.config` 会把 Maven 本地仓库固定到 F 盘；新的 PowerShell 或 IDE 会话通过 `MAVEN_USER_HOME`、`MAVEN_ARGS`、`GRADLE_USER_HOME`、`NPM_CONFIG_CACHE` 和 `JAVA_HOME` 使用这些目录，迁移后请重新打开终端或 IDE。
+本项目工具缓存统一放在 F 盘：Maven 用户目录为 `F:\newinstall\maven-user`、本地仓库为 `F:\newinstall\maven-repository`，Gradle 用户目录为 `F:\newinstall\gradle-user-home`，npm 缓存为 `F:\newinstall\npm-cache`。提交到仓库的 `.mvn/maven.config` 使用跨平台的项目相对仓库 `.m2-local/repository`，避免把 Windows 路径带入 GitHub Linux；本机新的 PowerShell 或 IDE 会话仍可通过 `MAVEN_USER_HOME`、`MAVEN_ARGS`、`GRADLE_USER_HOME`、`NPM_CONFIG_CACHE` 和 `JAVA_HOME` 指向 F 盘。GitHub Actions 会清空 Windows 专用 Maven 参数并使用 runner 临时目录。
 
 Testcontainers 配置位于项目内 `src/test/resources/testcontainers.properties`，不依赖用户目录下的 C 盘配置；Docker Desktop 本体配置仍由 Docker 管理，未迁移其必要的 `.docker` 用户目录。
 

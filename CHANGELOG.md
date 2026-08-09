@@ -5,6 +5,7 @@
 - 修复 Linux runner 直接执行 `./mvnw` 的 exit code 126：`mvnw` Git mode 从 `100644` 修复为 `100755`，workflow 同时使用 `bash ./mvnw`，不再依赖 Windows 工作区的 executable bit。
 - `actions/checkout`、`setup-java`、`setup-node` 升级到 Node 24 运行时版本线，artifact upload 升级到 Node 24 版本，消除 Node 20/deprecated setup-java v4 警告。
 - integration-security artifact 改为 `if-no-files-found: ignore`；Maven 前置失败时不会把缺失覆盖率/依赖报告误判为新的根因。npm audit 固定使用官方 registry 并保留真实退出码说明。
+- 修复第二个 CI 根因：`.mvn/maven.config` 不再提交 `F:\newinstall` Windows settings/repository 路径，改用跨平台 `.m2-local/repository`；GitHub Actions 清空 `MAVEN_ARGS/MAVEN_OPTS` 并使用 runner 临时 Maven 用户目录。
 
 ## 阶段 7 全量复验与最终评分 - 2026-08-09
 

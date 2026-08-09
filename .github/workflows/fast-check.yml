@@ -13,6 +13,10 @@ jobs:
   fast-check:
     name: Backend tests, frontend build, static manifests
     runs-on: ubuntu-latest
+    env:
+      MAVEN_ARGS: ''
+      MAVEN_OPTS: ''
+      MAVEN_USER_HOME: ${{ runner.temp }}/maven-user
     steps:
       - name: Check out source
         uses: actions/checkout@v5

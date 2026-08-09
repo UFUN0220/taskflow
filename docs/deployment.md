@@ -56,7 +56,7 @@ Maven 用户配置已迁移到 `F:\newinstall\maven-user`，本地仓库位于 `
 - Gradle：`F:\newinstall\gradle-user-home`；Gradle 安装目录位于 `F:\newinstall`；
 - npm：`F:\newinstall\npm-cache`；
 - Testcontainers：项目内 `src/test/resources/testcontainers.properties`；
-- Maven：由项目 `.mvn/maven.config` 固定到 `F:\newinstall\maven-repository`。
+- Maven：提交到仓库的 `.mvn/maven.config` 使用跨平台项目相对目录 `.m2-local/repository`；Windows 本地会话可通过 `MAVEN_USER_HOME`/`MAVEN_ARGS` 指向 `F:\newinstall\maven-user` 和 `F:\newinstall\maven-repository`，GitHub Actions 会清空这些 Windows 专用参数。
 
 Docker Desktop 的运行时和必要用户配置由 Docker 管理，未对 Docker 数据目录或卷做迁移、删除操作。
 

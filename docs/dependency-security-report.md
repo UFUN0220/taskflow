@@ -66,6 +66,6 @@ Maven 已新增 `security-scan` profile：
 
 - 本机没有安装 `actionlint`，workflow YAML 已通过 PyYAML 语法解析，但尚未完成 actionlint 级语义检查；
 - GitHub Actions 已在远程执行过，但 integration-security 在 Maven Wrapper 权限阶段以 exit code 126 失败；本轮已修复，尚未获得修复后的远程重跑结果；
-- GitHub runner 的 exit code 126 根因是 Git 中 `mvnw` 原先为 mode `100644`，workflow 已改为 `bash ./mvnw`，并同步修复 wrapper 的 Unix executable bit；Action 已迁移到 checkout/setup-java/setup-node 的 Node 24 版本线，artifact upload 使用 Node 24 版本线。
+- GitHub runner 的 exit code 126 根因是 Git 中 `mvnw` 原先为 mode `100644`，workflow 已改为 `bash ./mvnw`，并同步修复 wrapper 的 Unix executable bit；随后又发现 `.mvn/maven.config` 硬编码 Windows `F:\newinstall` settings，现已改为跨平台 `.m2-local/repository`，CI job 清空 `MAVEN_ARGS/MAVEN_OPTS` 并使用 runner 临时 Maven 用户目录。Action 已迁移到 checkout/setup-java/setup-node 的 Node 24 版本线，artifact upload 使用 Node 24 版本线。
 - 前端最终最大共享 chunk 约 747.99 KB，仍有 Vite 500 KB warning；
 - 当前依赖扫描没有自动升级依赖；需要人工核实 OWASP/NVD 结果是否存在 CPE 误报，再通过单独依赖升级变更和完整回归关闭告警。
