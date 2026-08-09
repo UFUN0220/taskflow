@@ -1,0 +1,28 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	task	NULL	index	idx_task_status_due	PRIMARY	8	NULL	26	7.55	Using where; Backward index scan
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	no matching row in const table
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	notification	NULL	index	idx_notification_user_status_created	PRIMARY	8	NULL	39	5.12	Using where; Backward index scan
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression
+task	0	PRIMARY	1	id	A	3475	NULL	NULL		BTREE			YES	NULL
+task	0	uk_task_no	1	task_no	A	3475	NULL	NULL		BTREE			YES	NULL
+task	1	idx_task_creator_status_created	1	creator_id	A	1	NULL	NULL		BTREE			YES	NULL
+task	1	idx_task_creator_status_created	2	status	A	2	NULL	NULL		BTREE			YES	NULL
+task	1	idx_task_creator_status_created	3	created_at	A	3475	NULL	NULL		BTREE			YES	NULL
+task	1	idx_task_project_status_due	1	project_id	A	1	NULL	NULL	YES	BTREE			YES	NULL
+task	1	idx_task_project_status_due	2	status	A	2	NULL	NULL		BTREE			YES	NULL
+task	1	idx_task_project_status_due	3	due_at	A	2	NULL	NULL	YES	BTREE			YES	NULL
+task	1	idx_task_department_status_due	1	department_id	A	11	NULL	NULL	YES	BTREE			YES	NULL
+task	1	idx_task_department_status_due	2	status	A	11	NULL	NULL		BTREE			YES	NULL
+task	1	idx_task_department_status_due	3	due_at	A	11	NULL	NULL	YES	BTREE			YES	NULL
+task	1	idx_task_status_due	1	status	A	2	NULL	NULL		BTREE			YES	NULL
+task	1	idx_task_status_due	2	due_at	A	2	NULL	NULL	YES	BTREE			YES	NULL
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression
+notification	0	PRIMARY	1	id	A	1954	NULL	NULL		BTREE			YES	NULL
+notification	0	uk_notification_source_message_user	1	source_message_id	A	1000	NULL	NULL	YES	BTREE			YES	NULL
+notification	0	uk_notification_source_message_user	2	user_id	A	1954	NULL	NULL		BTREE			YES	NULL
+notification	1	idx_notification_user_status_created	1	user_id	A	101	NULL	NULL		BTREE			YES	NULL
+notification	1	idx_notification_user_status_created	2	status	A	101	NULL	NULL		BTREE			YES	NULL
+notification	1	idx_notification_user_status_created	3	created_at	A	1954	NULL	NULL		BTREE			YES	NULL

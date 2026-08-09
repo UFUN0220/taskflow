@@ -63,6 +63,21 @@ python .\tools\performance\performance_harness.py run `
 
 脚本输出每个场景的请求数、成功数、错误数、错误率、QPS、平均响应时间、p95、p99 和 HTTP 状态码分布。`state_update` 会从 `PERF_TASK_*` 草稿任务中各取一次并提交；因此状态更新场景的预置任务量应覆盖预期请求量。
 
+## 本轮实测基线（2026-08-09）
+
+本轮在 Windows 11、16 CPU、Python 3.12.1、Docker Compose 本地单实例环境执行：10 个部门、100 个用户、1000 个预置任务；并发 20，预热 10 秒，正式采样 60 秒，随机种子 `20260807`。结果文件为 `docs/performance-prepared.json`、`docs/performance-baseline.json`、`docs/performance-runtime.json` 和 `docs/performance-explain.txt`。
+
+| 场景 | 请求数 | 成功 | 错误率 | QPS | 平均 ms | p95 ms | p99 ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| login | 2332 | 2332 | 0 | 38.867 | 399.068 | 542.310 | 642.514 |
+| task_list | 2294 | 2294 | 0 | 38.233 | 20.702 | 39.214 | 50.068 |
+| task_detail | 2278 | 2278 | 0 | 37.967 | 15.264 | 31.453 | 43.969 |
+| task_create | 2345 | 2345 | 0 | 39.083 | 45.371 | 78.465 | 102.575 |
+| state_update | 722 | 722 | 0 | 12.033 | 61.069 | 102.322 | 124.869 |
+| notification_list | 2323 | 2323 | 0 | 38.717 | 18.636 | 35.827 | 49.165 |
+
+采样结束时 HikariCP 为 active=0、idle=10、pending=0、max=10；Redis `INFO stats` 已写入运行时报告。上述数字只代表本机、当前数据规模、当前配置和本次 60 秒窗口，不代表生产容量或长期稳定性。
+
 ## 运行时观测
 
 先用压测脚本的登录结果取得管理员 Token，再在压测期间或结束后执行：
@@ -91,14 +106,14 @@ $env:TASKFLOW_PERF_ACCESS_TOKEN = "replace-with-access-token"
 
 | 项目 | 实际值 |
 | --- | --- |
-| 测试日期 | 待实际运行填写 |
-| 操作系统 / CPU / 内存 | 待实际运行填写 |
-| Java 版本和 JVM 参数 | 待实际运行填写 |
-| MySQL / Redis / RabbitMQ / MinIO 版本 | 待实际运行填写 |
-| 用户 / 部门 / 任务数据量 | 待实际运行填写 |
-| 并发用户数 / 持续时间 | 待实际运行填写 |
-| 各场景 QPS、平均值、p95、p99、错误率 | 待实际运行填写 |
-| 连接池、线程池、GC、Redis 指标 | 待实际运行填写 |
-| EXPLAIN 结论 | 待实际运行填写 |
+| 测试日期 | 2026-08-09 |
+| 操作系统 / CPU / 内存 | Windows 11 / 16 CPU；内存未记录 |
+| Java 版本和 JVM 参数 | Java 17；JVM 参数未单独记录 |
+| MySQL / Redis / RabbitMQ / MinIO 版本 | MySQL 8.4 / Redis 7.4-alpine / RabbitMQ 3.13-management / MinIO RELEASE.2024-12-18T13-15-44Z |
+| 用户 / 部门 / 任务数据量 | 100 / 10 / 1000 个预置任务，另有运行期间创建和状态更新请求 |
+| 并发用户数 / 持续时间 | 20 / 预热 10 秒 + 采样 60 秒 |
+| 各场景 QPS、平均值、p95、p99、错误率 | 已记录在 `docs/performance-baseline.json`，本页同步摘要 |
+| 连接池、线程池、GC、Redis 指标 | Actuator 和 Redis 指标已记录在 `docs/performance-runtime.json` |
+| EXPLAIN 结论 | 任务列表和通知列表均采用主键倒序扫描并过滤；现有复合索引已存在但本次优化器未选择，需结合真实数据和深分页继续评估 |
 
-当前工作区仅验证了脚本语法/帮助信息和应用构建，尚未在真实后端、数据库和指定数据规模上执行阶段 15 基线，因此没有可报告的性能指标。
+阶段 15 的本地基线已完成；后续如调整索引、分页或缓存，必须使用相同数据规模、机器和参数重新对比，不能直接把本轮结果外推到生产。

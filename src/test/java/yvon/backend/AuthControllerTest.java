@@ -31,7 +31,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
-@WebMvcTest(controllers = AuthController.class, properties = "taskflow.auth.enabled=true")
+@WebMvcTest(controllers = AuthController.class, properties = {
+        "taskflow.auth.enabled=true",
+        "taskflow.auth.jwt-secret=test-only-taskflow-secret-01234567890123456789"
+})
 @Import({SecurityConfig.class, GlobalExceptionHandler.class, TraceIdFilter.class})
 class AuthControllerTest {
 

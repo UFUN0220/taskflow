@@ -5,6 +5,10 @@ metadata:
   labels:
     app.kubernetes.io/name: taskflow-platform
 data:
+  # This manifest is for the local-learning profile only. Shared/prod clusters must
+  # provide SPRING_PROFILES_ACTIVE=prod through a separate deployment overlay.
+  SPRING_PROFILES_ACTIVE: dev
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE: health,info,metrics
   # Docker Desktop Kubernetes can reach Compose-published ports through this host alias.
   # Change to host.minikube.internal when using Minikube if that alias is required.
   INFRA_HOST: host.docker.internal

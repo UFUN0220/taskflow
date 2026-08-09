@@ -1,5 +1,15 @@
 # 阶段 18：安全和质量审查
 
+## 阶段 1 安全基线收敛补充（2026-08-09）
+
+阶段 1 已完成并验证：
+
+- `dev`/`test`/`prod` 配置分层；prod 对 JWT、数据库、RabbitMQ、MinIO、bootstrap admin 和 WebSocket 来源执行显式 Secret/弱值拒绝；
+- `.env.example` 和 `k8s/secret.yaml` 不再提供可误用凭据，`.gitignore` 增加证书私钥和运行时 Secret 路径；
+- Spring Security 和前端 Nginx 增加基础 Header/CSP，prod 默认只暴露健康探针并关闭 Swagger/OpenAPI；
+- 保持 Bearer + STOMP CONNECT 的一致性，没有进行不完整的 Cookie 迁移；localStorage 风险仍明确保留；
+- 66 项后端测试执行、0 失败、1 跳过；前端构建、Compose 模板解析、Kustomize 渲染通过；当前运行 Compose 登录、`/api/auth/me`、登出和旧 Token 401 烟测通过。
+
 审查范围覆盖认证授权、数据范围、输入校验、SQL 拼接、文件上传、敏感配置、日志、JWT、WebSocket、RabbitMQ 消费、幂等、事务、线程/定时任务、资源关闭、依赖和完整构建测试。
 
 ## 已修复
@@ -30,7 +40,7 @@
 | 越权 | 通过当前范围 | Controller 使用 `@PreAuthorize`，核心服务再次校验用户、项目、任务和数据范围；现有 RBAC/数据范围测试通过 |
 | SQL 注入 | 未发现当前代码注入点 | MyBatis 使用 `#{}`，JdbcTemplate 使用参数绑定；动态 `IN` 仅由数量生成 `?` 占位符 |
 | 文件上传 | 已加强 | 限制大小、后缀、MIME 和内容签名；仍不是恶意文件扫描 |
-| 敏感配置 | 高风险遗留 | `.env.example`、Compose 默认回退值和本地 Kubernetes Secret 模板包含开发凭据/占位值，不适合共享或生产环境 |
+| 敏感配置 | 部分通过 | prod 已移除敏感默认回退并对弱值 fail-fast；本地 `.env`/Kubernetes Secret 仍需由外部安全注入和轮换 |
 | 日志泄密 | 未发现密码/完整 Token 输出 | 日志主要记录 trace、资源 ID、消息 ID 和异常类型；全量异常堆栈仍需结合生产日志策略审查 |
 | Token 安全 | 部分通过 | JWT 有签名、过期时间、唯一 jti 和 Redis 活动会话撤销；Compose 旧 Token 失效烟测通过；前端 Token 仍存在 `localStorage`，存在 XSS 后被读取的风险 |
 | 消息重复 | 通过当前范围 | 通知按 `source_message_id` 幂等，消费失败有有限重试和死信记录 |
@@ -45,27 +55,27 @@
 2. 前端访问令牌使用 `localStorage`，应评估迁移到 HttpOnly、Secure、SameSite Cookie 或更严格的 CSP。
 3. 默认 JWT Secret、MySQL/RabbitMQ/MinIO 开发凭据仍存在本地模板和 Compose 回退配置中；这些值只能用于个人本地学习环境。
 4. JWT 已通过 Redis 活动会话标记支持主动撤销；用户被禁用、会话过期或主动退出后，HTTP 和 WebSocket 鉴权均会拒绝旧会话。真实 Compose 旧 Token 失效烟测已通过。
-5. Swagger/OpenAPI 和 Actuator 指标的访问策略仍偏向开发便利，生产环境应关闭或使用专用权限和内网入口。
-6. 当前 HTTP/WebSocket 为本地明文连接；生产环境必须使用 TLS/WSS，并正确配置可信反向代理。
-7. Kubernetes 阶段只部署应用层，中间件仍是 Docker Compose 单实例；本地 `k8s/secret.yaml` 是明文模板，不代表生产 Secret 管理。
+5. Swagger/OpenAPI 和 Actuator 已在 prod 配置层收紧：prod 关闭 OpenAPI、仅暴露 health，Nginx 仅代理精确健康路径；尚未完成生产网络隔离实测。
+6. 当前 HTTP/WebSocket 仍可使用本地明文连接；生产环境必须使用 TLS/WSS，并正确配置可信反向代理。应用默认不信任转发 Header。
+7. Kubernetes 阶段只部署应用层，中间件仍是 Docker Compose 单实例；本地 `k8s/secret.yaml` 为空值模板，不代表生产 Secret 管理。
 8. 附件没有病毒扫描、压缩炸弹识别、图像重编码或内容安全服务；当前仅允许受限类型并限制大小。
 9. 尚未执行基于在线漏洞数据库的完整 `npm audit`/OWASP 依赖扫描；当前只完成 Maven 依赖静态分析和已有构建测试。
 
 ## 不适合生产使用的部分
 
-- Compose/Kubernetes 清单中的开发凭据、默认 Secret 和本地端口暴露；
+- 本地 `.env`/Kubernetes 外部 Secret 的生成、轮换和审计仍未完成；
 - 未配置 TLS、集中式 Secret 管理和生产级 Token 存储策略；登录限流和 Token 撤销已实现本地代码路径，但仍需生产环境验证；
 - MySQL、Redis、RabbitMQ、MinIO 单实例；
-- 本地 Kubernetes Secret 明文模板；
-- Actuator/Swagger 的开发型暴露策略；
+- 本地 Kubernetes Secret 外部注入和生产网络隔离仍未验证；
+- 本地 dev profile 仍保留开发型 Actuator/Swagger 便利配置；
 - 未接入杀毒或内容安全扫描的附件上传。
 
 ## 验证结果
 
-- 最新 `./mvnw.cmd test`：64 项通过，1 项可选 Testcontainers 测试按默认配置跳过；显式阶段 14 Testcontainers 测试已通过 1 项，并完成 8 条 Flyway 迁移。
+- 最新 `./mvnw.cmd test`：66 项执行、0 失败、1 项可选 Testcontainers 测试按默认配置跳过；显式阶段 14 Testcontainers 测试已通过 1 项，并完成 8 条 Flyway 迁移。
 - `npm run build`：通过；存在既有的单 JS chunk 大于 500KB 警告；
-- `docker compose config --quiet`：通过；
-- 后端镜像重建：通过，包含 Redis 会话、登出和限流代码；
+- `docker compose config --quiet`：无 `.env` 时按必填 Secret 约束 fail-fast；使用仅存在于当前进程的非敏感测试值解析通过；
+- 阶段 1 后端单元/接口测试覆盖生产弱 Secret 拒绝和基础安全 Header；当前运行 Compose 容器完成认证烟测；由于工作区没有真实 `.env`，未用假值重建现有应用容器，避免把测试凭据写入运行环境；
 - Compose 后端容器健康检查：通过；
 - `GET http://localhost:8080/api/health`：HTTP 200；
 - 未删除数据库、Docker 卷、现有账号或用户文件；真实登录-登出-旧 Token 失效和 10 次/60 秒限流烟测已通过。

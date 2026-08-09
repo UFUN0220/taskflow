@@ -2,14 +2,24 @@
 param(
     [ValidateSet('docker-desktop', 'kind', 'minikube')]
     [string]$Runtime = 'docker-desktop',
+    [string]$KindClusterName = 'dev',
     [switch]$Apply
 )
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $projectRoot 'k8s'
+$toolRoot = 'F:\newinstall'
+$kubectlCommand = (Get-Command kubectl -ErrorAction SilentlyContinue).Source
+if (-not $kubectlCommand -and (Test-Path -LiteralPath (Join-Path $toolRoot 'kubectl.exe'))) {
+    $kubectlCommand = Join-Path $toolRoot 'kubectl.exe'
+}
+$kindCommand = (Get-Command kind -ErrorAction SilentlyContinue).Source
+if (-not $kindCommand -and (Test-Path -LiteralPath (Join-Path $toolRoot 'kind.exe'))) {
+    $kindCommand = Join-Path $toolRoot 'kind.exe'
+}
 
-if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
+if (-not $kubectlCommand) {
     throw 'kubectl was not found in PATH.'
 }
 
@@ -18,11 +28,11 @@ if (-not (Test-Path -LiteralPath (Join-Path $manifestPath 'kustomization.yaml'))
 }
 
 if ($Runtime -eq 'kind') {
-    if (-not (Get-Command kind -ErrorAction SilentlyContinue)) {
+    if (-not $kindCommand) {
         throw 'kind was not found in PATH. Install Kind or use -Runtime docker-desktop.'
     }
-    kind load docker-image taskflow-platform-backend:latest
-    kind load docker-image taskflow-platform-frontend:latest
+    & $kindCommand load docker-image taskflow-platform-backend:latest --name $KindClusterName
+    & $kindCommand load docker-image taskflow-platform-frontend:latest --name $KindClusterName
 }
 
 if ($Runtime -eq 'minikube') {
@@ -34,14 +44,14 @@ if ($Runtime -eq 'minikube') {
 }
 
 Write-Output 'Rendered Kubernetes resources:'
-kubectl kustomize $manifestPath
+& $kubectlCommand kustomize $manifestPath
 
 if ($Apply) {
     Write-Output 'Applying Kubernetes resources...'
-    kubectl apply -k $manifestPath
-    kubectl rollout status deployment/backend -n taskflow --timeout=180s
-    kubectl rollout status deployment/frontend -n taskflow --timeout=180s
-    kubectl get pods,svc -n taskflow -o wide
+    & $kubectlCommand apply -k $manifestPath
+    & $kubectlCommand rollout status deployment/backend -n taskflow --timeout=180s
+    & $kubectlCommand rollout status deployment/frontend -n taskflow --timeout=180s
+    & $kubectlCommand get pods,svc -n taskflow -o wide
 }
 else {
     Write-Output 'Dry render only. Re-run with -Apply after configuring k8s/secret.yaml and selecting a working cluster context.'

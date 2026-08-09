@@ -2,6 +2,10 @@
 
 ## 认证遗留问题修复 - 2026-08-09
 
+- 2026-08-09 阶段 1 安全基线收敛：按 dev/test/prod 分离敏感配置，生产缺失/弱 Secret fail-fast，收紧 prod Actuator/OpenAPI，增加 Spring Security/Nginx 基础安全 Header，明确不信任任意转发 Header，并将 `.env.example`/Kubernetes Secret 模板改为空值安全模板；保留 Bearer + STOMP 一致性，localStorage、TLS/WSS 和集中式密钥管理仍列为生产遗留风险。
+- 参考 PriceSight 项目级加权验收范式，新增 TaskFlow 100 分制综合评估：79/100；本地工程基线有条件通过，生产发布不通过。评分维度覆盖需求核心、架构、安全、测试、评估可信度、运行集成、工程治理和文档交付。
+- 新增 `docs/project-acceptance-score-2026-08-09.json` 机器可读评分结果，并将 P0/P1/P2 生产门禁、权重、证据和分层交付判定同步到全面验收报告。
+- 阶段 0 冻结 79/100 调优基线：记录 Git HEAD、dirty 工作区、F 盘工具路径、端口/环境变量、Flyway V1–V8、测试和部署入口；新增阶段 1～7 调优待办矩阵。基线阶段未修改业务代码、数据库卷或 Kind 资源。
 - JWT 增加唯一 `jti`，登录后在 Redis 保存带过期时间的活动会话标记。
 - 新增后端 `POST /api/auth/logout`，HTTP 鉴权过滤器和 WebSocket CONNECT 均检查 Redis 会话，主动退出后旧会话被拒绝。
 - 新增按登录名和来源地址哈希分组的 Redis 登录失败窗口，默认 10 次/60 秒，并增加统一 429 错误码。
@@ -9,6 +13,9 @@
 - 新增会话、登出、限流和 JJWT jti 测试；默认回归为 64 项执行、0 失败，显式阶段 14 Testcontainers 测试另行通过，真实 Compose 旧 Token 失效和限流烟测通过。
 - Testcontainers 1.21.4 已在当前 Docker Engine 29.6.2/API 1.55 环境完成 MySQL、Redis、RabbitMQ、MinIO 和 Flyway 集成烟测。
 - 将 Gradle、npm、Maven 及 Testcontainers 的项目相关配置/缓存固定到 F 盘，避免项目工具继续在 C 盘生成非必要缓存。
+- 补充本地 Kind `dev` 集群环境信息：Kubernetes v1.32.2、单节点 `dev-control-plane`、context `kind-dev`，状态 Ready；kind v0.27.0 位于 F 盘。另记录 kubectl 当前由 Docker Desktop 提供 v1.36.1，F 盘副本为 v1.32.0。
+- 完成阶段 17 Kind 实机验收：后端 2 副本、前端 1 副本通过探针，前后端端口转发健康检查返回 HTTP 200；后端 Pod 删除后自动恢复，前后端滚动重启成功。该结果仅覆盖本地单节点应用层。
+- 完成阶段 15 本地性能基线：固定 10 个部门、100 个用户、1000 个任务，20 并发、预热 10 秒、采样 60 秒；六个场景均 0 错误，报告写入 `docs/performance-baseline.json`，运行时指标写入 `docs/performance-runtime.json`，EXPLAIN 输出写入 `docs/performance-explain.txt`。数字仅代表当前 Windows 本机，不作为生产容量承诺。
 - 将 Testcontainers 从 1.20.6 升级到 1.21.4，针对 Docker Engine 29.6.2/API 1.55 的兼容性问题进行环境修复。
 
 ## 项目全面验收 - 2026-08-09
@@ -17,7 +24,7 @@
 - 重新执行后端回归测试：58 项执行、0 失败、1 项跳过；前端生产构建和 Compose 配置通过。
 - 通过现有 Compose 完成六服务健康、核心认证/API、Flyway V8、重启保卷恢复烟测；未删除数据库或 Docker 卷。
 - 初版报告曾记录阶段 3 的 Redis 会话、后端登出和 Token 主动撤销缺口；该缺口已由后续“认证遗留问题修复”条目补齐代码路径。
-- 明确记录阶段 14 专用 Testcontainers 测试已通过，以及 Kubernetes 仅完成静态清单渲染、未完成集群实机验收。
+- 明确记录阶段 14 专用 Testcontainers 测试已通过，以及阶段 17 Kind 应用层实机验收和阶段 15 本地性能基线的证据边界。
 - 同步修正认证、自动化测试和部署文档中的证据边界与当前验证数字。
 
 ## 阶段 19 - 面试和简历材料 - 2026-08-08
@@ -41,7 +48,7 @@
 - Configured two backend replicas, RollingUpdate strategy, startup/readiness/liveness probes, and resource requests/limits.
 - Added a PowerShell renderer/deployer with optional Kind and Minikube local-image loading.
 - Documented the local learning topology where Kubernetes hosts the application layer and Docker Compose continues to provide middleware.
-- Did not claim live Pod recovery validation because the current Kubernetes context requires credentials and Kind/Minikube are not installed.
+- Initial implementation did not claim live Pod recovery validation; the follow-up local Kind `dev` verification completed deployment, probes, Pod recovery, and rolling restart checks.
 
 ## Stage 16 - Docker Compose deployment - 2026-08-07
 
@@ -55,7 +62,7 @@
 - Added standard-library Python tooling for configurable department/user/task data preparation and login, task list, task detail, task creation, state update, and notification list benchmark scenarios.
 - Added EXPLAIN statements and a PowerShell runtime collector for Actuator, JVM, and Redis observations.
 - Exposed authenticated Actuator metrics for connection-pool, executor, JVM, and GC inspection.
-- Did not prefill performance metrics or change indexes before a real baseline identifies a bottleneck.
+- Added a reproducible local baseline and runtime/EXPLAIN evidence without changing indexes based only on one machine's result; production capacity remains unverified.
 
 ## Stage 14 - Automated testing - 2026-08-07
 

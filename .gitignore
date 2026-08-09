@@ -9,6 +9,13 @@ target/
 .env.*
 !.env.example
 src/main/resources/application-local.yml
+**/*.pem
+**/*.key
+**/*.p12
+**/*.jks
+runtime-secrets/
+certs/
+secrets/
 .m2-local/
 .npm-cache/
 

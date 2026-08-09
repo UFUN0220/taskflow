@@ -1,5 +1,17 @@
 # 阶段 1 安全与权限边界
 
+## 阶段 1 配置与运行边界
+
+配置按 profile 分层：`dev` 保留本地开发便利值，`test` 使用测试专用值，`prod` 不提供敏感配置默认值。生产启动会校验 JWT、MySQL、RabbitMQ、MinIO、bootstrap admin（启用时）和 WebSocket 来源配置；缺失、过短或包含 `change-me`、`default`、`password`、`local` 等弱标记的值会 fail-fast。`.env.example`、`k8s/secret.yaml` 只提供变量名和空值模板，真实值必须通过本机未提交的 `.env`、部署平台 Secret 或其他外部注入方式提供。
+
+当前已验证的边界：
+
+- Spring Security 增加 `CSP`、`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy` 和生产 HSTS；CSP 可通过 `TASKFLOW_SECURITY_HEADERS_CSP` 调整；
+- prod 仅配置 Actuator `health`，关闭 Swagger/OpenAPI UI 与 JSON；前端 Nginx 只代理精确的 `/actuator/health`，其他 Actuator 路径返回 404；
+- 应用默认 `server.forward-headers-strategy=none`，不信任任意 `X-Forwarded-For`/`X-Forwarded-Proto`。若部署在可信反向代理后，必须把代理网络边界、Header 清洗和 HTTPS/WSS 终止策略一并配置和验证；
+- CSRF 目前保持关闭，因为 REST 和 STOMP 都使用显式 Bearer Token。若以后迁移 HttpOnly Cookie，必须同步启用并测试 CSRF、SameSite、Secure、登出和 STOMP 鉴权，不能只改前端存储位置；
+- 前端仍使用 `localStorage` 保存 Bearer Token。本阶段没有做半成品 Cookie 迁移，CSP 只降低脚本注入面，不能消除 XSS 读取 Token 的风险。
+
 ## RBAC 模型
 
 ```text

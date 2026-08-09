@@ -28,12 +28,14 @@
 
 `docker-compose.yml` 仅启动开发所需的 MySQL、Redis、RabbitMQ 和 MinIO，并为每个服务配置健康检查和命名卷。宿主机端口使用需求约定的非默认映射：3307、6380、5673、15673、9000 和 9001。
 
-首次使用可以复制 `.env.example` 为 `.env` 后执行：
+首次使用可以复制 `.env.example` 为 `.env`，然后填写其中所有必填的本地开发 Secret 后执行：
 
 ```powershell
 docker compose up -d
 docker compose ps
 ```
+
+`.env.example` 现在只保留空值和安全说明，不包含可直接复用的数据库、RabbitMQ、MinIO 或 JWT 凭据。未填写时 `docker compose config --quiet`/`up` 会按预期 fail-fast；阶段 1 已用仅存在于当前进程的非敏感测试值验证 Compose 模板可以解析。不要把 `.env`、证书私钥或运行时 Secret 提交到 Git。
 
 旧的基础设施启动命令仍可用于只启动中间件：`docker compose up -d mysql redis rabbitmq minio`。完整应用启动请使用上面的初始化脚本。
 
@@ -60,13 +62,15 @@ Docker Desktop 的运行时和必要用户配置由 Docker 管理，未对 Docke
 
 ## Flyway 数据库初始化
 
-启动 MySQL 后，通过 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 配置连接，并设置 `FLYWAY_ENABLED=true`。应用启动时会执行 `classpath:db/migration` 下的版本迁移。阶段 6 的 V6 增加草稿编辑和删除权限；如需本地管理员，再设置 `TASKFLOW_BOOTSTRAP_ADMIN_ENABLED=true` 和 `TASKFLOW_BOOTSTRAP_ADMIN_PASSWORD`，密码不会写入迁移脚本。
+启动 MySQL 后，通过 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 配置连接，并设置 `FLYWAY_ENABLED=true`。应用启动时会执行 `classpath:db/migration` 下的版本迁移。阶段 6 的 V6 增加草稿编辑和删除权限；如需本地管理员，再设置 `TASKFLOW_BOOTSTRAP_ADMIN_ENABLED=true` 和 `TASKFLOW_BOOTSTRAP_ADMIN_PASSWORD`，密码不会写入迁移脚本。生产必须使用 `SPRING_PROFILES_ACTIVE=prod`，由外部注入所有必需 Secret；生产 profile 不接受开发默认值。
 
 ## 应用
 
 后端默认监听 8080，前端开发服务器监听 5173。使用 `npm run dev` 时，Vite 将 `/api` 和 `/ws` 代理到宿主机后端；使用 Compose 时，前端由 Nginx 提供静态文件和同源代理。
 
 如果需要本地数据库连接，复制 `src/main/resources/application-local.yml.example` 为 `application-local.yml` 并修改凭据；该文件已被 Git 忽略。
+
+生产管理面边界：prod 默认只开放 Actuator 健康探针，Swagger/OpenAPI 默认关闭；前端 Nginx 仅代理 `/actuator/health`。生产 HTTPS/WSS 应在可信反向代理或 Ingress 终止，并明确清洗和传递 `X-Forwarded-*`，应用默认不信任这些 Header。
 
 ## 2026-08-09 全面验收记录
 
