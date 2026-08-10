@@ -33,6 +33,7 @@ jobs:
         run: bash ./mvnw -Dtaskflow.integration=true verify
 
       - name: Set up Node.js
+        if: always()
         uses: actions/setup-node@v5
         with:
           node-version: '20'
@@ -40,11 +41,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies
+        if: always()
         working-directory: frontend
         run: npm ci
 
       - name: Run npm audit (high and critical findings block)
         id: npm-audit
+        if: always()
         working-directory: frontend
         continue-on-error: true
         run: |
@@ -57,6 +60,7 @@ jobs:
 
       - name: Run OWASP Dependency-Check (high and critical findings block)
         id: dependency-check
+        if: always()
         continue-on-error: true
         run: |
           set +e
@@ -73,6 +77,12 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
           const path = process.env.RUNNER_TEMP;
+          for (const name of ['npm-audit.exit', 'dependency-check.exit', 'npm-audit.json']) {
+            if (!fs.existsSync(`${path}/${name}`)) {
+              console.error(`Required dependency scan output is missing: ${name}`);
+              process.exit(1);
+            }
+          }
           const read = (name) => fs.readFileSync(`${path}/${name}`, 'utf8').trim();
           const npmExit = Number(read('npm-audit.exit'));
           const owaspExit = Number(read('dependency-check.exit'));

@@ -165,6 +165,7 @@ F:\newinstall\kubectl.exe kustomize k8s
 ```powershell
 .\mvnw.cmd verify
 .\mvnw.cmd "-Dtaskflow.integration=true" verify
+.\mvnw.cmd "-Dtaskflow.integration=true" "-Dtest=Stage12ReliabilityContainerTest" test
 ```
 
 JaCoCo 报告位于 `target/site/jacoco/`。Windows PowerShell 中必须给 `-Dtaskflow.integration=true` 加引号，避免被 Maven 误解析为 `.integration=true` 生命周期阶段；GitHub Linux runner 使用 `bash ./mvnw`，且 `mvnw` 已标记为 Unix executable，避免 exit code 126。GitHub Actions 分为 `fast-check` 和 `integration-security`：前者阻断快速回归、前端构建及 Compose/Kustomize 静态错误；后者执行 Testcontainers、覆盖率及现有 npm/OWASP 扫描，最终 gate 对无效报告、扫描非零、高危/严重漏洞 fail-closed。moderate 不单独阻断，但本轮 npm audit 已为 0。远程修复后的 workflow 尚未从当前环境重新触发或读取，记为 `NOT_REMOTE_VERIFIED`；本机未安装 actionlint，记为 `NOT_EXECUTED`，不能把 YAML 静态解析当成远程绿灯。Actions 已迁移到 Node 24 运行时版本线。
@@ -215,6 +216,7 @@ python tools/performance/performance_harness.py prepare --output docs/performanc
 - [阶段 15 性能工具](docs/performance.md)
 - [阶段 4 性能优化对比](docs/performance-comparison-2026-08.md)
 - [阶段 5 故障注入与恢复验收](docs/fault-injection-2026-08-09.md)
+- [阶段 12 Testcontainers 故障注入自动化验收](docs/fault-injection-acceptance-2026-08-10.md)
 - [阶段 16 Docker Compose 部署](docs/deployment.md)
 - [阶段 17 Kubernetes 本地部署](docs/k8s-local.md)
 - [阶段 18 安全和质量审查](docs/stage18-security-quality.md)
