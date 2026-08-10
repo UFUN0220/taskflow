@@ -33,6 +33,11 @@
         <testcontainers.version>1.21.4</testcontainers.version>
         <jacoco.version>0.8.13</jacoco.version>
         <dependency-check.version>12.1.0</dependency-check.version>
+        <!-- Narrow security overrides confirmed by OSV fixed versions; keep each family aligned. -->
+        <jackson-bom.version>2.21.5</jackson-bom.version>
+        <netty.version>4.1.136.Final</netty.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
+        <bouncycastle.version>1.84</bouncycastle.version>
         <!-- Override with -Ddependency-check.data.directory in local/CI runs. -->
         <dependency-check.data.directory>${project.build.directory}/dependency-check-data</dependency-check.data.directory>
     </properties>
@@ -94,6 +99,16 @@
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
             <version>${minio.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>

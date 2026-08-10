@@ -28,8 +28,12 @@ Spring Boot 3.5 官方升级说明要求重点检查以下变化：
 | Actuator 管理面 | 继续按已有 prod 暴露边界，未新增 heapdump 暴露 |
 | Profile | 现有 profile 名称符合 3.5 命名约束 |
 | Maven 快速回归 | 待本地 runner 恢复后执行并记录 |
-| Testcontainers verify | 待本地 runner 恢复后执行并记录 |
+| Testcontainers verify | 远程 run `31414454733` / job `93540030517`：84 tests、0 failures、0 errors、0 skipped；Stage12 4/4；JaCoCo 通过 |
 | 浏览器 E2E direct/proxy | 待本地 acceptance 环境执行；未用旧证据替代升级后复验 |
+
+## Remote validation
+
+Spring Boot 3.5.16 的 Maven/Testcontainers 兼容性门已通过。实际解析得到 Spring Security 6.5.11、Spring WebMVC 6.2.19、Tomcat 10.1.55、AssertJ 3.27.7；Jackson 2.21.4、Netty 4.1.135.Final、BouncyCastle 1.81 和 Commons Lang3 3.17.0 仍触发 OSV，因此进入单独 Batch B，而不是回滚 Boot 3.5.16。
 
 ## 证据边界
 
