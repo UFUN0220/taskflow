@@ -112,6 +112,7 @@ class NotificationWebSocketChannelInterceptorTest {
         assertThat(resultAccessor.getUser().getName()).isEqualTo("11");
     }
 
+
     private Message<?> connect(String authorization) {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.CONNECT);
         accessor.addNativeHeader("Authorization", authorization);

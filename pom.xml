@@ -33,6 +33,8 @@
         <testcontainers.version>1.21.4</testcontainers.version>
         <jacoco.version>0.8.13</jacoco.version>
         <dependency-check.version>12.1.0</dependency-check.version>
+        <!-- Override with -Ddependency-check.data.directory in local/CI runs. -->
+        <dependency-check.data.directory>${project.build.directory}/dependency-check-data</dependency-check.data.directory>
     </properties>
     <dependencies>
         <dependency>
@@ -96,7 +98,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp-jvm</artifactId>
-            <version>5.1.0</version>
+            <version>5.4.0</version>
         </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
@@ -287,9 +289,13 @@
                         <version>${dependency-check.version}</version>
                         <configuration>
                             <format>ALL</format>
-                            <failBuildOnCVSS>9</failBuildOnCVSS>
+                            <!-- CVSS 7+ covers confirmed high and critical findings. -->
+                            <failBuildOnCVSS>7</failBuildOnCVSS>
                             <failOnError>true</failOnError>
                             <skipTestScope>false</skipTestScope>
+                            <dataDirectory>${dependency-check.data.directory}</dataDirectory>
+                            <hostedSuppressionsEnabled>true</hostedSuppressionsEnabled>
+                            <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
                         </configuration>
                         <executions>
                             <execution>

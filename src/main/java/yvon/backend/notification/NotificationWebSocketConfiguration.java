@@ -35,6 +35,7 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/queue");
+        registry.setApplicationDestinationPrefixes("/app");
         registry.setUserDestinationPrefix("/user");
     }
 

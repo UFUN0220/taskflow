@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-10 — 调优阶段 11.6
+
+- 修复 Nginx WebSocket/STOMP 代理路径下因订阅确认竞态导致的真实通知不稳定问题。
+- 增加订阅就绪应用消息闭环，浏览器仅在收到真实 `MESSAGE` 后进入实时连接状态。
+- 补充 Nginx WebSocket 长连接代理配置，并修正 Playwright worker 重启时的唯一测试数据与 `taskNo` 长度约束。
+- 本地 Compose 证据：Nginx proxy 连续 3×9/9，backend direct 9/9；不外推为生产 HA 结论。
+
+## 调优阶段 11：依赖漏洞治理与 CI 质量门禁 - 2026-08-10
+
+- 将 `react-router-dom`/`react-router` 从 6.30.4 升级到 7.18.2；官方 npm audit 复验为 moderate/high/critical 全 0，完成 npm ci、typecheck、build 回归。
+- 将直接 OkHttp 依赖升级到 5.4.0；Maven/OWASP 最终报告仍含 19 个依赖条目、79 条 high 和 25 条 critical，未添加未经证明的 suppression，也未宣称依赖零漏洞。
+- 为 `security-scan` profile 增加可注入 Dependency-Check 数据目录、`NVD_API_KEY` 和 fail-closed 配置；integration-security 最终 gate 对无效报告、扫描非零和 high/critical 阻断。
+- 复验发现后端直连 Chromium STOMP 9/9，但当前前端 Nginx `/ws` 代理路径未收到 MESSAGE；README、依赖报告和总验收报告均保留这两个证据边界。远程 workflow 为 `NOT_REMOTE_VERIFIED`，actionlint 为 `NOT_EXECUTED`。
+
 ## 调优阶段 10：浏览器认证通知闭环 - 2026-08-10
 
 - 修复 WebSocket 握手 Principal 与通知 userId 不一致、CONNECT Principal 未传播到后续 SUBSCRIBE 的问题；服务端仅从已验证身份推导用户目的地。

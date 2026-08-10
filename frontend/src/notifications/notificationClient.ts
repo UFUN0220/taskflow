@@ -118,11 +118,23 @@ export class NotificationRealtimeClient {
       const frame = parseFrame(raw)
       if (frame.command === 'CONNECTED') {
         this.reconnectAttempts = 0
-        this.send('SUBSCRIBE', { id: 'notification-center', destination: '/user/queue/notifications', ack: 'auto' })
-        this.onStatus('CONNECTED')
+        this.send('SUBSCRIBE', {
+          id: 'notification-center',
+          destination: '/user/queue/notifications',
+          ack: 'auto',
+        })
+        this.send('SEND', {
+          destination: '/app/notifications/ready',
+          'content-type': 'application/json',
+        }, '{}')
       } else if (frame.command === 'MESSAGE') {
         try {
-          this.onNotification(JSON.parse(frame.body) as NotificationItem)
+          const message = JSON.parse(frame.body) as NotificationItem & { notificationType?: string }
+          if (message.notificationType === 'SUBSCRIPTION_READY') {
+            this.onStatus('CONNECTED')
+          } else {
+            this.onNotification(message)
+          }
         } catch {
           this.onStatus('ERROR')
         }

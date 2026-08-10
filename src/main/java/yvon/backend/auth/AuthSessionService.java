@@ -4,6 +4,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.dao.DataAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -18,6 +21,7 @@ import java.time.Instant;
 public class AuthSessionService {
 
     private static final String KEY_PREFIX = "taskflow:auth:session:";
+    private static final Logger log = LoggerFactory.getLogger(AuthSessionService.class);
 
     private final StringRedisTemplate redis;
     private final JwtTokenService tokenService;
@@ -55,7 +59,14 @@ public class AuthSessionService {
     }
 
     private boolean hasSession(String sessionId) {
-        return Boolean.TRUE.equals(redis.hasKey(key(sessionId)));
+        try {
+            return Boolean.TRUE.equals(redis.hasKey(key(sessionId)));
+        } catch (DataAccessException exception) {
+            // Redis is only a revocation index. If it is unavailable, never
+            // turn an otherwise valid JWT into an authenticated request.
+            log.warn("Redis session check unavailable; rejecting session authentication");
+            return false;
+        }
     }
 
     private String sessionId(Claims claims) {

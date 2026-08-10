@@ -1,5 +1,11 @@
 # TaskFlow Platform
 
+## 阶段 11.6 WebSocket 代理链路
+
+2026-08-10 的本地 acceptance 验证已完成 Nginx `/ws/notifications` 代理闭环：Chromium → frontend Nginx → backend → STOMP CONNECT/CONNECTED/SUBSCRIBE → 真实 MESSAGE → 页面通知。Nginx proxy 连续 3 轮 9/9，backend direct 回归 9/9。根因是前端在 CONNECTED 后过早宣告订阅就绪，代理时序放大了竞态；现通过已认证的 `/app/notifications/ready` 应用消息确认 SUBSCRIBE 已处理。详情见 [阶段 11.6 浏览器 E2E 报告](docs/e2e-browser-report-2026-08-10-stage11-6.md)。
+
+该证据仅覆盖本地 Docker Compose 单节点代理链路，不等同于生产 Ingress、跨节点 HA 或云负载均衡验证。
+
 ## Stage 13 progress
 
 ## Stage 14 progress
@@ -20,7 +26,7 @@ Stage 18 adds a security and quality review, hardens audit source-address handli
 
 阶段 6 新增 Kind `kind-production-like` overlay、`taskflow.local` 本地 TLS 证书脚本、`/`/`/api`/`/ws` 路由定义和 namespace 内 HTTPS/WSS 验证 edge。当前集群没有 Ingress Controller，因此仅计为生产样式静态配置和本地 TLS/WSS 握手证据，不计为真实生产 Ingress 或生产 HA。
 
-阶段 8 在阶段 7 基础上建立了确定性 acceptance 环境；阶段 9 复验后默认 Maven 为 75/0/1，显式 Testcontainers verify 为 75/0/0，Cookie/CSRF acceptance smoke 通过。阶段 10 在同一隔离环境完成真实 Chromium `3 × 9/9`，包括 STOMP MESSAGE 到通知中心、断线重连和 HTTP 补拉。生产 TLS、外部密钥轮换、真实 Ingress、跨实例 WebSocket 广播、同参数性能复测和依赖风险治理仍未完成，生产发布仍不通过。详见[阶段 10 浏览器复验](docs/e2e-browser-report-2026-08-10.md)、[最终复验摘要](docs/final-optimization-summary-2026-08-09.md)和[确定性验收环境](docs/acceptance-environment.md)。
+阶段 8 在阶段 7 基础上建立了确定性 acceptance 环境；阶段 9 复验后默认 Maven 为 75/0/1，显式 Testcontainers verify 为 75/0/0，Cookie/CSRF acceptance smoke 通过。阶段 10 在后端直连路径完成真实 Chromium `3 × 9/9`，包括 STOMP MESSAGE 到通知中心、断线重连和 HTTP 补拉；阶段 11 复验发现当前前端 Nginx `/ws` 代理路径只能看到 CONNECTED，未收到 MESSAGE，因此代理路径不能写成 9/9。阶段 11 已将 npm audit 清零，并把 OWASP/npm 扫描失败改为 CI 最终门禁阻断；Maven 依赖风险、Nginx WebSocket 代理、生产 TLS、外部密钥轮换、真实 Ingress、跨实例 WebSocket 广播和同参数性能复测仍未闭环，生产发布仍不通过。详见[阶段 10 浏览器复验](docs/e2e-browser-report-2026-08-10.md)、[依赖漏洞治理与 CI 门禁记录](docs/dependency-security-report.md)、[最终复验摘要](docs/final-optimization-summary-2026-08-09.md)和[确定性验收环境](docs/acceptance-environment.md)。
 
 The backend now includes task draft maintenance, filtered and paginated task queries, primary/collaborator assignment, scoped detail access, batch assignee loading, task operation logs, a fixed task state machine, optimistic concurrency control using old-status-plus-version conditional updates, task comments, MinIO-backed attachment metadata workflows, persistent reminder plans, Redis ZSet scheduling, distributed scanning locks, RabbitMQ reminder publishing, idempotent notification consumers, bounded retries, dead-letter compensation, HTTP notification query APIs, and STOMP over WebSocket user-destination push. Flyway V1 through V8 are designed for a fresh MySQL database.
 
@@ -30,9 +36,9 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 当前阶段 19 已完成登录、Redis 会话标记、后端登出撤销、登录失败限流、前端退出体验、HttpOnly Cookie/CSRF、Token 兼容接口、任务与项目基础流程、评论、附件、通知中心、用户/角色/部门管理、统一错误处理、自动化测试、性能工具、全容器部署、本地 Kubernetes 应用层清单、安全质量审查、阶段5部分故障恢复演练、阶段7最终复验、阶段10真实浏览器通知闭环和基于已验证代码的面试简历材料。阶段 9 已移除正式 React 流程对 localStorage JWT 的读写；生产 TLS、外部密钥轮换、真实 Ingress、跨实例 WebSocket 广播和 HA 仍未完成。
 
-2026-08-10 阶段 10 复验结论：项目可在本地 Compose 和隔离 acceptance Compose 环境运行和演示；管理员登录、Cookie `/me`、任务写链路、401/403、登出失效、附件、真实 Chromium STOMP 通知和断线补拉均有证据。上述结果仍不等同于生产容量、生产 Ingress 或生产高可用，项目暂不判定为生产就绪。详见[阶段 10 浏览器复验](docs/e2e-browser-report-2026-08-10.md)和[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
+2026-08-10 阶段 11 复验结论：npm 官方 audit 为 moderate/high/critical 全部 0；Maven OWASP Dependency-Check 报告生成但因扫描数据/hosted suppression 问题及高危命中以 exit 1 结束，不能视为零漏洞。最终 CI 已对 npm high/critical、OWASP 非零和无效报告 fail-closed，但远程 workflow 尚未从本环境重新触发，状态为 `NOT_REMOTE_VERIFIED`。项目可在本地 Compose 和隔离 acceptance Compose 环境运行和演示；管理员登录、Cookie `/me`、任务写链路、401/403、登出失效、附件和后端直连 Chromium STOMP 通知均有证据，但 Nginx `/ws` 代理路径仍未闭环。上述结果仍不等同于生产容量、生产 Ingress 或生产高可用，项目暂不判定为生产就绪。详见[阶段 10 浏览器复验](docs/e2e-browser-report-2026-08-10.md)、[依赖漏洞治理与 CI 门禁记录](docs/dependency-security-report.md)和[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
-参考 PriceSight 项目采用的加权验收方法，本项目阶段 10 增量复验后评分建议为 **85/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。Acceptance 环境消除了人工管理员凭据阻塞，真实 Chromium 已连续 3 次完成 9/9，包含 STOMP 通知和断线补拉；同参数性能复测、真实 Ingress、跨实例广播和依赖风险治理仍未闭环。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-10.json)。
+参考 PriceSight 项目采用的加权验收方法，本项目阶段 11 复验后仍建议 **85/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。npm moderate 已清零，CI 已具备扫描失败阻断逻辑，但 Maven/OWASP 仍未通过；后端直连 Chromium 9/9 与 Nginx `/ws` 代理路径 6/9 必须分开陈述。评分未因静态门禁或单机证据机械上调。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-10.json)。
 
 ## 技术栈
 
@@ -161,7 +167,7 @@ F:\newinstall\kubectl.exe kustomize k8s
 .\mvnw.cmd "-Dtaskflow.integration=true" verify
 ```
 
-JaCoCo 报告位于 `target/site/jacoco/`。Windows PowerShell 中必须给 `-Dtaskflow.integration=true` 加引号，避免被 Maven 误解析为 `.integration=true` 生命周期阶段；GitHub Linux runner 使用 `bash ./mvnw`，且 `mvnw` 已标记为 Unix executable，避免 exit code 126。GitHub Actions 分为 `fast-check` 和 `integration-security`：前者阻断快速回归、前端构建及 Compose/Kustomize 静态错误；后者执行 Testcontainers 和覆盖率，npm/OWASP 在线扫描暂为 advisory，并明确记录网络或数据库不可用。Actions 已迁移到 Node 24 运行时版本线。
+JaCoCo 报告位于 `target/site/jacoco/`。Windows PowerShell 中必须给 `-Dtaskflow.integration=true` 加引号，避免被 Maven 误解析为 `.integration=true` 生命周期阶段；GitHub Linux runner 使用 `bash ./mvnw`，且 `mvnw` 已标记为 Unix executable，避免 exit code 126。GitHub Actions 分为 `fast-check` 和 `integration-security`：前者阻断快速回归、前端构建及 Compose/Kustomize 静态错误；后者执行 Testcontainers、覆盖率及现有 npm/OWASP 扫描，最终 gate 对无效报告、扫描非零、高危/严重漏洞 fail-closed。moderate 不单独阻断，但本轮 npm audit 已为 0。远程修复后的 workflow 尚未从当前环境重新触发或读取，记为 `NOT_REMOTE_VERIFIED`；本机未安装 actionlint，记为 `NOT_EXECUTED`，不能把 YAML 静态解析当成远程绿灯。Actions 已迁移到 Node 24 运行时版本线。
 
 浏览器 E2E 使用 Playwright，覆盖登录、无 localStorage JWT、401/403、任务真实写入、重复提交保护、登出失效、附件入口、真实 STOMP 通知和断线补拉。阶段 8 起，Playwright 和性能工具统一读取 `TASKFLOW_ACCEPTANCE_ADMIN_USERNAME`、`TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD`、`TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD`，不再猜测现有数据库管理员密码。测试密码只通过当前终端或 CI Secret 注入，不写入仓库；失败时 Playwright 在 `frontend/test-results/` 保留截图、视频或 trace。阶段 10 acceptance 已完成真实 Chromium `3 × 9/9`；完整运行记录见[阶段 10 浏览器复验](docs/e2e-browser-report-2026-08-10.md)。完整隔离环境见[确定性验收环境](docs/acceptance-environment.md)。
 

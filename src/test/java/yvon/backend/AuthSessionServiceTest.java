@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import yvon.backend.auth.AuthSessionService;
 import yvon.backend.auth.JwtTokenService;
 
@@ -42,6 +43,14 @@ class AuthSessionServiceTest {
         when(redis.hasKey("taskflow:auth:session:jti-1")).thenReturn(true);
 
         assertThat(service.isActive(claims)).isTrue();
+    }
+
+    @Test
+    void redisFailureFailsClosedForSessionAuthentication() {
+        when(redis.hasKey("taskflow:auth:session:jti-1"))
+                .thenThrow(new RedisConnectionFailureException("redis unavailable"));
+
+        assertThat(service.isActive(claims())).isFalse();
     }
 
     @Test

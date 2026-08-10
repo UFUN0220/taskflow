@@ -18,6 +18,7 @@ jobs:
       MAVEN_ARGS: ''
       MAVEN_OPTS: ''
       MAVEN_USER_HOME: ${{ runner.temp }}/maven-user
+      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
     steps:
       - name: Check out source
         uses: actions/checkout@v5
@@ -43,20 +44,58 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Run npm audit (advisory while network/database availability is not guaranteed)
+      - name: Run npm audit (high and critical findings block)
+        id: npm-audit
         working-directory: frontend
         continue-on-error: true
         run: |
           set +e
-          npm audit --audit-level=high --registry=https://registry.npmjs.org --json > "$RUNNER_TEMP/npm-audit.json"
+          npm audit --audit-level=high --registry=https://registry.npmjs.org --json > "$RUNNER_TEMP/npm-audit.json" 2> "$RUNNER_TEMP/npm-audit.stderr"
           status=$?
           set -e
+          echo "$status" > "$RUNNER_TEMP/npm-audit.exit"
           echo "npm audit exit code: $status"
-          echo "The artifact records whether the command found advisories or could not reach the registry."
 
-      - name: Run OWASP Dependency-Check (advisory while NVD availability is not guaranteed)
+      - name: Run OWASP Dependency-Check (high and critical findings block)
+        id: dependency-check
         continue-on-error: true
-        run: bash ./mvnw -Psecurity-scan -DskipTests verify
+        run: |
+          set +e
+          bash ./mvnw -Psecurity-scan -DskipTests \
+            -Ddependency-check.data.directory="$RUNNER_TEMP/dependency-check-data" verify
+          status=$?
+          set -e
+          echo "$status" > "$RUNNER_TEMP/dependency-check.exit"
+          echo "OWASP Dependency-Check exit code: $status"
+
+      - name: Enforce dependency security gate
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = process.env.RUNNER_TEMP;
+          const read = (name) => fs.readFileSync(`${path}/${name}`, 'utf8').trim();
+          const npmExit = Number(read('npm-audit.exit'));
+          const owaspExit = Number(read('dependency-check.exit'));
+          let npmReport;
+          try {
+            npmReport = JSON.parse(fs.readFileSync(`${path}/npm-audit.json`, 'utf8'));
+          } catch (error) {
+            console.error(`npm audit did not produce valid JSON: ${error.message}`);
+            process.exit(1);
+          }
+          const vulnerabilities = npmReport.metadata?.vulnerabilities;
+          if (!vulnerabilities) {
+            console.error('npm audit report has no vulnerability metadata; registry or scan failure is not green.');
+            process.exit(1);
+          }
+          console.log(`npm audit: moderate=${vulnerabilities.moderate ?? 0}, high=${vulnerabilities.high ?? 0}, critical=${vulnerabilities.critical ?? 0}`);
+          console.log(`OWASP Dependency-Check exit code: ${owaspExit}`);
+          if (npmExit !== 0 || (vulnerabilities.high ?? 0) > 0 || (vulnerabilities.critical ?? 0) > 0 || owaspExit !== 0) {
+            console.error('Dependency security gate failed: scan failure or confirmed high/critical findings must be reviewed.');
+            process.exit(1);
+          }
+          NODE
 
       - name: Upload coverage and dependency reports
         if: always()
@@ -68,3 +107,6 @@ jobs:
             target/site/jacoco/**
             target/dependency-check-report.*
             ${{ runner.temp }}/npm-audit.json
+            ${{ runner.temp }}/npm-audit.stderr
+            ${{ runner.temp }}/npm-audit.exit
+            ${{ runner.temp }}/dependency-check.exit

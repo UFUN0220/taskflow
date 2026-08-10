@@ -8,8 +8,11 @@ type TaskSummary = { taskId: number; taskNo: string; title: string; status: stri
 const adminUsername = process.env.TASKFLOW_ACCEPTANCE_ADMIN_USERNAME
 const adminPassword = process.env.TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD
 const e2eUserPassword = process.env.TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD
-const runId = process.env.TASKFLOW_ACCEPTANCE_RUN_ID ?? String(Date.now())
-const taskRunId = runId.replace(/[^A-Za-z0-9_-]/g, '_').toUpperCase()
+const configuredRunId = process.env.TASKFLOW_ACCEPTANCE_RUN_ID ?? String(Date.now())
+// A restarted Playwright worker gets a new process. Including that process id
+// prevents a failed worker's fixture user from colliding with its replacement.
+const runId = `${configuredRunId}-${process.pid}`
+const taskRunId = runId.replace(/[^A-Za-z0-9_-]/g, '_').toUpperCase().slice(-39)
 const taskPrefix = `TASKFLOW_E2E_${taskRunId}`
 
 let api: APIRequestContext

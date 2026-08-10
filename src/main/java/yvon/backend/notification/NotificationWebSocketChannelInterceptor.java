@@ -67,6 +67,7 @@ public class NotificationWebSocketChannelInterceptor implements ChannelIntercept
         return message;
     }
 
+
     private Message<?> authenticatedMessage(Message<?> message, StompHeaderAccessor accessor) {
         return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
     }
