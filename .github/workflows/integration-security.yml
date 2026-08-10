@@ -17,7 +17,6 @@ jobs:
     env:
       MAVEN_ARGS: ''
       MAVEN_OPTS: ''
-      MAVEN_USER_HOME: ${{ runner.temp }}/maven-user
       NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
     steps:
       - name: Check out source
