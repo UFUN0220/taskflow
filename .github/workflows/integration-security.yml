@@ -17,7 +17,6 @@ jobs:
     env:
       MAVEN_ARGS: ''
       MAVEN_OPTS: ''
-      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
     steps:
       - name: Check out source
         uses: actions/checkout@v5
@@ -58,17 +57,6 @@ jobs:
           echo "$status" > "$RUNNER_TEMP/npm-audit.exit"
           echo "npm audit exit code: $status"
 
-      - name: Record NVD API key configuration
-        if: always()
-        run: |
-          if [ -n "${NVD_API_KEY:-}" ]; then
-            echo "true" > "$RUNNER_TEMP/nvd-api-key-configured"
-            echo "NVD_API_KEY configured: true"
-          else
-            echo "false" > "$RUNNER_TEMP/nvd-api-key-configured"
-            echo "NVD_API_KEY configured: false"
-          fi
-
       - name: Restore Dependency-Check data cache
         id: dependency-check-cache
         if: always()
@@ -88,26 +76,27 @@ jobs:
           echo "$cache_hit" > "$RUNNER_TEMP/dependency-check-cache-hit"
           echo "Dependency-Check cache hit: $cache_hit"
 
-      - name: Run OWASP Dependency-Check (high and critical findings block)
+      - name: Run OWASP Dependency-Check (supplemental only)
         id: dependency-check
         if: always()
         continue-on-error: true
         run: |
           started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           echo "$started_at" > "$RUNNER_TEMP/dependency-check-started-at"
-          if [ -z "${NVD_API_KEY:-}" ]; then
-            echo "NVD_API_KEY is not configured; refusing a slow unauthenticated NVD cold start." | tee "$RUNNER_TEMP/dependency-check.log"
+          cache_hit="${{ steps.dependency-check-cache.outputs.cache-hit }}"
+          if [ "$cache_hit" != "true" ]; then
+            echo "NVD remote data is unavailable and no trusted Dependency-Check cache was restored; supplemental scan is blocked." | tee "$RUNNER_TEMP/dependency-check.log"
             finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
             echo "$finished_at" > "$RUNNER_TEMP/dependency-check-finished-at"
-            echo "78" > "$RUNNER_TEMP/dependency-check.exit"
-            echo "SCAN_INFRA_FAILURE" > "$RUNNER_TEMP/dependency-check.classification"
-            echo "OWASP Dependency-Check exit code: 78"
-            echo "OWASP classification: SCAN_INFRA_FAILURE"
+            echo "0" > "$RUNNER_TEMP/dependency-check.exit"
+            echo "SUPPLEMENTAL_NVD_REMOTE_BLOCKED" > "$RUNNER_TEMP/dependency-check.classification"
+            echo "OWASP classification: SUPPLEMENTAL_NVD_REMOTE_BLOCKED"
             exit 0
           fi
           set +e
           set -o pipefail
           bash ./mvnw -Psecurity-scan -DskipTests \
+            -DautoUpdate=false \
             -Ddependency-check.data.directory="$RUNNER_TEMP/dependency-check-data" verify 2>&1 | tee "$RUNNER_TEMP/dependency-check.log"
           status=${PIPESTATUS[0]}
           set -e
@@ -116,7 +105,7 @@ jobs:
           echo "$status" > "$RUNNER_TEMP/dependency-check.exit"
           echo "OWASP Dependency-Check exit code: $status"
           if [ "$status" -eq 0 ]; then
-            classification=SCAN_PASS
+            classification=SUPPLEMENTAL_SCAN_PASS
           elif [ -s target/dependency-check-report.json ] && node <<'NODE'
           const fs = require('fs');
           try {
@@ -140,31 +129,23 @@ jobs:
           }
           NODE
           then
-            classification=VULNERABILITY_GATE_FAILURE
+            classification=SUPPLEMENTAL_VULNERABILITY_FINDINGS
           else
-            classification=SCAN_INFRA_FAILURE
+            classification=SUPPLEMENTAL_SCAN_FAILURE
           fi
           echo "$classification" > "$RUNNER_TEMP/dependency-check.classification"
           echo "OWASP classification: $classification"
           if [ "$status" -eq 143 ]; then
-            echo "OWASP scan interrupted with exit 143; inspect runner timeout/cancellation evidence before calling this a vulnerability failure."
+            echo "OWASP supplemental scan interrupted with exit 143; this is not a primary CI gate result."
           fi
 
-      - name: Save Dependency-Check data cache
-        if: always() && steps.dependency-check-cache.outputs.cache-hit != 'true'
-        continue-on-error: true
-        uses: actions/cache/save@v5
-        with:
-          path: ${{ runner.temp }}/dependency-check-data
-          key: ${{ runner.os }}-dependency-check-v12.1-data
-
-      - name: Enforce dependency security gate
+      - name: Enforce npm audit gate
         if: always()
         run: |
           node <<'NODE'
           const fs = require('fs');
           const path = process.env.RUNNER_TEMP;
-          for (const name of ['npm-audit.exit', 'dependency-check.exit', 'dependency-check.classification', 'npm-audit.json']) {
+          for (const name of ['npm-audit.exit', 'npm-audit.json']) {
             if (!fs.existsSync(`${path}/${name}`)) {
               console.error(`Required dependency scan output is missing: ${name}`);
               process.exit(1);
@@ -172,8 +153,6 @@ jobs:
           }
           const read = (name) => fs.readFileSync(`${path}/${name}`, 'utf8').trim();
           const npmExit = Number(read('npm-audit.exit'));
-          const owaspExit = Number(read('dependency-check.exit'));
-          const classification = read('dependency-check.classification');
           let npmReport;
           try {
             npmReport = JSON.parse(fs.readFileSync(`${path}/npm-audit.json`, 'utf8'));
@@ -187,11 +166,11 @@ jobs:
             process.exit(1);
           }
           console.log(`npm audit: moderate=${vulnerabilities.moderate ?? 0}, high=${vulnerabilities.high ?? 0}, critical=${vulnerabilities.critical ?? 0}`);
-          console.log(`OWASP Dependency-Check: classification=${classification}, exit=${owaspExit}`);
-          if (npmExit !== 0 || (vulnerabilities.high ?? 0) > 0 || (vulnerabilities.critical ?? 0) > 0 || classification !== 'SCAN_PASS' || owaspExit !== 0) {
-            console.error(`Dependency security gate failed: classification=${classification}; scan infrastructure failures and confirmed high/critical findings both block the check.`);
+          if (npmExit !== 0 || (vulnerabilities.high ?? 0) > 0 || (vulnerabilities.critical ?? 0) > 0) {
+            console.error('npm audit gate failed: registry/scan failures and confirmed high/critical findings block this check.');
             process.exit(1);
           }
+          console.log('npm audit gate passed; OSV-Scanner is the primary Maven/npm vulnerability gate in the parallel required job.');
           NODE
 
       - name: Upload coverage and dependency reports
@@ -212,4 +191,18 @@ jobs:
             ${{ runner.temp }}/dependency-check-started-at
             ${{ runner.temp }}/dependency-check-finished-at
             ${{ runner.temp }}/dependency-check-cache-hit
-            ${{ runner.temp }}/nvd-api-key-configured
+
+  osv-vulnerability-gate:
+    name: OSV primary dependency vulnerability gate
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0
+    with:
+      scan-args: |-
+        --recursive
+        ./
+      results-file-name: taskflow-osv-results.sarif
+      fail-on-vuln: true
+      upload-sarif: true
+    permissions:
+      contents: read
+      actions: read
+      security-events: write

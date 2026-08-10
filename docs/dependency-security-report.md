@@ -43,6 +43,16 @@
 
 在两轮远程结果完成前，项目验收报告中的“OWASP 未完成”事实保持不变，评分继续保持 85/100；本阶段当前为外部 Secret 配置阻塞，不能进入阶段 13。
 
+## 阶段 12.4：NVD 不可达条件下的替代门禁（当前状态）
+
+本阶段不再申请、获取或依赖 `NVD_API_KEY`，也不把 NVD 冷缓存问题无限阻塞主 CI。OWASP Maven `security-scan` profile 保留，但在 GitHub Actions 中定位为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`；只有恢复受信任本地数据缓存时才允许以 `-DautoUpdate=false` 做 supplemental scan。
+
+主依赖漏洞门禁改为 Google 官方 OSV-Scanner reusable workflow `v2.5.0`，递归扫描仓库中的 `pom.xml` 与 `frontend/package-lock.json`，漏洞发现和扫描基础设施失败都必须阻断该 job，并上传 SARIF/官方扫描结果。Maven 传递依赖默认走 deps.dev 解析；OSV 当前不覆盖 Maven test scope，故 Testcontainers/Maven 回归继续独立保留。
+
+当前等待第一次真实远程 OSV run，以下字段必须以 run/job/artifact 证据回填：OSV version、Maven dependencies discovered、OSV vulnerabilities、exit code、SARIF/report artifact、job conclusion。若 OSV 官方数据源不可达，分类为 `OSV_SCAN_INFRA_FAILURE`，不得写成无漏洞。
+
+本阶段不会修改依赖版本、添加 suppression 或降低 CVSS 门槛；OWASP 与 OSV 的 artifact-level 对照见[依赖漏洞归因与双扫描器对照](dependency-vulnerability-triage-2026-08-10.md)。评分继续保持 85/100，阶段 13 不启动。
+
 ## 1. 治理前后摘要
 
 | 检查 | 治理前 | 治理后 | 结论 |
