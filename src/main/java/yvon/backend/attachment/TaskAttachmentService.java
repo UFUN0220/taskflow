@@ -190,7 +190,11 @@ public class TaskAttachmentService {
         if (filename == null || filename.isBlank()) {
             throw new BusinessException(BusinessErrorCode.INVALID_PARAMETER, "附件文件名不能为空");
         }
-        String safe = Paths.get(filename).getFileName().toString()
+        // Multipart clients may send either slash style, regardless of the server OS.
+        // Normalize before using the platform-specific Path implementation so that
+        // Windows-style traversal input is handled consistently on Linux CI as well.
+        String normalized = filename.replace('\\', '/');
+        String safe = Paths.get(normalized).getFileName().toString()
                 .replaceAll("[\\p{Cntrl}]", "")
                 .trim();
         if (safe.isBlank() || safe.length() > 255 || safe.equals(".") || safe.equals("..")) {
