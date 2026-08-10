@@ -27,7 +27,7 @@ Spring Boot 3.5 官方升级说明要求重点检查以下变化：
 | Spring Framework/Security/Tomcat/Jackson/Netty | 由 Boot BOM 统一解析，未添加单组件 override |
 | Actuator 管理面 | 继续按已有 prod 暴露边界，未新增 heapdump 暴露 |
 | Profile | 现有 profile 名称符合 3.5 命名约束 |
-| Maven 快速回归 | 待本地 runner 恢复后执行并记录 |
+| Maven 快速回归 | 远程 integration-security run `31415397055`：84 tests、0 failures、0 errors、0 skipped；BUILD SUCCESS |
 | Testcontainers verify | 远程 run `31414454733` / job `93540030517`：84 tests、0 failures、0 errors、0 skipped；Stage12 4/4；JaCoCo 通过 |
 | 浏览器 E2E direct/proxy | 待本地 acceptance 环境执行；未用旧证据替代升级后复验 |
 
