@@ -2,6 +2,43 @@
 
 本报告只记录本轮实际执行结果。`target/` 已被 Git 忽略；最终源码对应的原始 OWASP 报告副本为 `target/phase11-owasp-final.json` 和 `target/phase11-owasp-final.xml`。报告中的 CVE 命中是 Dependency-Check 的 CPE/NVD 最佳努力结果，hosted suppressions 下载失败时不能直接当作已确认可利用漏洞，也不能当作零漏洞。
 
+## 阶段 12.3：确定性扫描收口（当前状态）
+
+当前状态：`SCAN_INFRA_NOT_CLOSED`。本阶段只改进扫描运行条件和结果分类，不修改 Stage12 reliability 测试、不升级依赖、不添加 suppression。
+
+### 已确认的前一轮根因
+
+远程 run `31385404134` / job `93444588147` 从 11:52:15Z 开始，OWASP 步骤 11:54:05Z 开始。在未配置 NVD API key 的情况下，日志显示 NVD 数据集 374,572 条，下载到 180,000 条（48%）时接近 job 的 `timeout-minutes: 30`，随后 runner 收到 shutdown signal，Maven exit 143；没有出现 NVD 403/429、OOM、hosted suppression 异常或真实 CVSS gate 输出。job conclusion 为 `cancelled`，因此最终分类为 `JOB_TIMEOUT_DURING_NVD_INITIALIZATION`，不是 `VULNERABILITY_GATE_FAILURE`。
+
+### 本阶段配置
+
+- `pom.xml` 改用 `<nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>`，让 Dependency-Check 从环境变量读取 API key，不把 Secret 展开到 Maven 参数；仓库不保存 key。
+- `integration-security` job timeout 调整为 60 分钟，避免把 Java/Testcontainers、npm 和冷启动 NVD 更新共同挤在 30 分钟内。
+- 使用 `actions/cache/restore@v5` 与 `actions/cache/save@v5` 缓存 `${{ runner.temp }}/dependency-check-data`。key 为 `${{ runner.os }}-dependency-check-v12.1-data`，包含 runner OS 与 Dependency-Check major/minor 版本，restore key 允许同版本持续更新，不绑定业务 `pom.xml` 全量 hash。
+- workflow 只输出 `NVD_API_KEY configured: true/false`，同时记录 cache hit、开始/结束时间、exit code、分类和扫描日志；不输出 Secret。
+- 分类固定为 `SCAN_PASS`、`VULNERABILITY_GATE_FAILURE` 或 `SCAN_INFRA_FAILURE`。前两类都继续阻断 gate；没有报告或报告解析不出 CVSS 高危证据时，不得伪装成漏洞失败。
+- 无论扫描成功、漏洞失败或基础设施失败，artifact 都尝试上传报告、日志、exit/classification/cache/key-status 文件。
+
+### 本地验证
+
+```powershell
+.\mvnw.cmd '-Psecurity-scan' '-DskipTests' '-DautoUpdate=false' `
+  '-Ddependency-check.data.directory=F:\newinstall\maven-repository\org\owasp\dependency-check-data\11.0' verify
+```
+
+结果：报告 HTML/JSON/XML/SARIF 等完整生成，Maven exit 1；报告和 Maven 输出均存在 CVSS >= 7 命中，分类为 `VULNERABILITY_GATE_FAILURE`。这证明新的 API key 参数没有破坏插件执行，但不代表远程 NVD cache miss/hit 已验证。
+
+### 远程验证记录
+
+本次 workflow 修改推送后必须分别记录：
+
+| Run | Cache | NVD_API_KEY | Update/scan duration | Reports | Classification |
+|---|---|---|---|---|---|
+| 第一轮 | 待远程验证 | workflow 只输出布尔值 | 待远程验证 | 待远程验证 | 待远程验证 |
+| 第二轮 | 必须确认 cache hit | workflow 只输出布尔值 | 与第一轮比较 | 待远程验证 | 待远程验证 |
+
+在两轮远程结果完成前，项目验收报告中的“OWASP 未完成”事实保持不变，评分继续保持 85/100。
+
 ## 1. 治理前后摘要
 
 | 检查 | 治理前 | 治理后 | 结论 |
