@@ -29,7 +29,7 @@ Spring Boot 3.5 官方升级说明要求重点检查以下变化：
 | Profile | 现有 profile 名称符合 3.5 命名约束 |
 | Maven 快速回归 | 远程 integration-security run `31415397055`：84 tests、0 failures、0 errors、0 skipped；BUILD SUCCESS |
 | Testcontainers verify | 远程 run `31414454733` / job `93540030517`：84 tests、0 failures、0 errors、0 skipped；Stage12 4/4；JaCoCo 通过 |
-| 浏览器 E2E direct/proxy | 待本地 acceptance 环境执行；未用旧证据替代升级后复验 |
+| 浏览器 E2E direct/proxy | acceptance smoke 通过；direct `8/9 → 9/9`，proxy `8/9 → 9/9`，首轮业务 STOMP MESSAGE 偶发未到达，未满足稳定门禁 |
 
 ## Remote validation
 
@@ -38,6 +38,10 @@ Spring Boot 3.5.16 的 Maven/Testcontainers 兼容性门已通过。实际解析
 ## 证据边界
 
 本文件记录的是一次小批 BOM 变更的风险分析，不代表升级成功。只有 Maven、Testcontainers、前端、Compose/Kustomize、浏览器 E2E 和远程 CI 均取得本次提交后的真实结果，才能将该批次标记为完成或据此减少漏洞计数。
+
+## Batch B 浏览器回归补充（2026-08-11）
+
+当前提交重新打包和 acceptance 镜像构建成功，Maven/Testcontainers/OSV 证据没有出现确定性兼容回归。浏览器 direct 与 Nginx proxy 均能完成 Cookie 登录、任务写链路、409 防冲突、断线补拉和附件场景；但两条路径首轮都曾出现同一偶发问题：通知记录已持久化、`SUBSCRIPTION_READY` 已收到，业务 `MESSAGE` 未在条件窗口到达，下一轮才通过。该结果不能归因于 Nginx rewrite 或 Principal 丢失，也不能把 9/9 偶发通过写成稳定证据；Stage 11.5B 保持 `PARTIAL_PENDING_BROWSER_E2E`。
 
 参考：
 

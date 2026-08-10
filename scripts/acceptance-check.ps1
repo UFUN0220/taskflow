@@ -20,12 +20,24 @@ function Invoke-JsonRequest {
         [object]$Body = $null,
         [Microsoft.PowerShell.Commands.WebRequestSession]$WebSession
     )
-    $params = @{ Method = $Method; Uri = $Uri; Headers = $Headers; ContentType = 'application/json'; UseBasicParsing = $true; SkipHttpErrorCheck = $true; WebSession = $WebSession }
+    $params = @{ Method = $Method; Uri = $Uri; Headers = $Headers; ContentType = 'application/json'; UseBasicParsing = $true; WebSession = $WebSession }
     if ($null -ne $Body) { $params.Body = ($Body | ConvertTo-Json -Compress) }
-    $response = Invoke-WebRequest @params
+    try {
+        $response = Invoke-WebRequest @params
+        $content = $response.Content
+        $responseHeaders = $response.Headers
+        $status = [int]$response.StatusCode
+    } catch {
+        $errorResponse = $_.Exception.Response
+        if ($null -eq $errorResponse) { throw }
+        $reader = New-Object System.IO.StreamReader($errorResponse.GetResponseStream())
+        try { $content = $reader.ReadToEnd() } finally { $reader.Dispose() }
+        $responseHeaders = $errorResponse.Headers
+        $status = [int]$errorResponse.StatusCode
+    }
     $body = $null
-    if (-not [string]::IsNullOrWhiteSpace($response.Content)) { $body = $response.Content | ConvertFrom-Json }
-    return @{ Status = [int]$response.StatusCode; Body = $body; Headers = $response.Headers }
+    if (-not [string]::IsNullOrWhiteSpace($content)) { $body = $content | ConvertFrom-Json }
+    return @{ Status = $status; Body = $body; Headers = $responseHeaders }
 }
 
 $health = Invoke-JsonRequest -Method Get -Uri "$BaseUrl/api/health" -WebSession $webSession

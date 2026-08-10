@@ -352,3 +352,4 @@
 - WebSocket 同源握手复用 Cookie，STOMP CONNECT 不再发送 JWT，也不把 JWT 放入 URL；Bearer STOMP 兼容模式保留。
 - 增加 Cookie、CSRF、Bearer 优先级、生产 Secure 属性和 Cookie WebSocket 会话测试；完整后端回归 75/0/1，阶段9 acceptance Cookie/CSRF smoke 通过。
 - 正式 React 不再将 JWT 写入或读取 `localStorage`；Playwright 登录、401、403 和任务真实写链路通过，重复提交与后续通知场景仍保留失败证据，未宣称完整 E2E 通过。
+- Stage 11.5B-E2E（2026-08-11）：使用重新打包的 Spring Boot 3.5.16 acceptance 镜像完成健康、Cookie/CSRF 和真实 Chromium 回归；direct `8/9 → 9/9`、Nginx proxy `8/9 → 9/9`。两条路径首轮均出现通知已落库但业务 STOMP MESSAGE 未到达的偶发证据，保留 trace/screenshot/video，Stage 11.5B 继续为 `PARTIAL_PENDING_BROWSER_E2E`，评分保持 85/100，Stage 13 未开始。

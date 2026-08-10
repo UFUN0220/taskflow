@@ -177,6 +177,7 @@ test('浏览器真实收到 STOMP 通知消息', async ({ page }) => {
   await installWebSocketTracker(page, process.env.TASKFLOW_E2E_DIRECT_WS === 'true')
   await loginUi(page, adminUsername, adminPassword!)
   await openNotificationCenter(page)
+  await waitForNotificationSubscription(page)
   const taskNo = `${taskPrefix}_WS`
   const title = e2eTitle('E2E WebSocket Task')
   const task = await createTask(adminSession.token, taskNo, title)
@@ -207,6 +208,7 @@ test('WebSocket 断线重连后通过 HTTP 补拉恢复通知', async ({ page })
   await installWebSocketTracker(page)
   await loginUi(page, adminUsername, adminPassword!)
   await openNotificationCenter(page)
+  await waitForNotificationSubscription(page)
   await page.evaluate(() => {
     const sockets = (window as unknown as { __taskflowSockets?: WebSocket[] }).__taskflowSockets ?? []
     sockets[sockets.length - 1]?.close()
@@ -318,7 +320,16 @@ async function openNotificationCenter(page: Page) {
   }
 }
 
+async function waitForNotificationSubscription(page: Page) {
+  await expect.poll(async () => page.evaluate(() => {
+    const state = window as unknown as { __taskflowWsMessages?: string[] }
+    return (state.__taskflowWsMessages ?? []).some((frame) =>
+      frame.startsWith('MESSAGE\n') && frame.includes('SUBSCRIPTION_READY'))
+  }), { timeout: 10_000 }).toBe(true)
+}
+
 async function installWebSocketTracker(page: Page, directBackend = false) {
+  const directBackendPort = process.env.TASKFLOW_E2E_DIRECT_WS_PORT ?? '28080'
   await page.addInitScript((useDirectBackend) => {
     const NativeWebSocket = window.WebSocket
     const sockets: WebSocket[] = []
@@ -329,7 +340,7 @@ async function installWebSocketTracker(page: Page, directBackend = false) {
       constructor(url: string | URL, protocols?: string | string[]) {
         const actualUrl = useDirectBackend ? (() => {
           const directUrl = new URL(String(url))
-          directUrl.port = '28080'
+          directUrl.port = (window as unknown as { __taskflowDirectWsPort?: string }).__taskflowDirectWsPort ?? '28080'
           return directUrl.toString()
         })() : url
         super(actualUrl, protocols)
@@ -371,6 +382,11 @@ async function installWebSocketTracker(page: Page, directBackend = false) {
     ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[]; __taskflowWsSentFrames: string[] }).__taskflowWsStates = states
     ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[]; __taskflowWsSentFrames: string[] }).__taskflowWsSentFrames = sentFrames
   }, directBackend)
+  if (directBackend) {
+    await page.addInitScript((port) => {
+      ;(window as unknown as { __taskflowDirectWsPort?: string }).__taskflowDirectWsPort = port
+    }, directBackendPort)
+  }
 }
 
 async function readApi<T>(response: { ok(): boolean; status(): number; json(): Promise<unknown> }): Promise<T> {

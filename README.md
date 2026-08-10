@@ -38,7 +38,7 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 2026-08-11 阶段 12.4 当前结论：npm 官方 audit 为 moderate/high/critical 全部 0；OSV-Scanner v2.5.0 已真实扫描 Maven 27 packages 与 frontend 220 packages，发现 70 个 Maven 漏洞并正确阻断主门禁；Maven OWASP Dependency-Check 保留为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，本地报告仍有真实高危记录，不能视为依赖零漏洞。项目可在本地 Compose 和隔离 acceptance Compose 环境运行和演示；上述结果仍不等同于生产容量、生产 Ingress 或生产高可用，项目暂不判定为生产就绪。详见[依赖漏洞治理与 CI 门禁记录](docs/dependency-security-report.md)、[依赖漏洞归因](docs/dependency-vulnerability-triage-2026-08-10.md)和[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
-2026-08-11 Stage 11.5B-R：Spring Boot 3.5.16 候选及 Batch B 精确依赖修复已通过远程 Maven/Testcontainers、JaCoCo、npm audit 和 OSV；OSV 从 70 条降为 0 条。升级后浏览器 E2E 仍需 acceptance 凭据注入后复验，因此评分保持 85/100，Stage 13 不启动。详见[Stage 11.5B remediation](docs/dependency-vulnerability-remediation-2026-08-11.md)和[Spring Boot 3.5.16 impact](docs/spring-boot-3-5-upgrade-impact.md)。
+2026-08-11 Stage 11.5B-R：Spring Boot 3.5.16 候选及 Batch B 精确依赖修复已通过远程 Maven/Testcontainers、JaCoCo、npm audit 和 OSV；OSV 从 70 条降为 0 条。升级后 acceptance smoke 已通过，但浏览器 direct/proxy 首轮均出现业务 STOMP MESSAGE 偶发未到达（随后单轮通过），尚未满足稳定 E2E 门禁，因此评分保持 85/100，Stage 13 不启动。详见[Stage 11.5B remediation](docs/dependency-vulnerability-remediation-2026-08-11.md)、[升级后浏览器报告](docs/e2e-browser-report-2026-08-11-stage11-5b.md)和[Spring Boot 3.5.16 impact](docs/spring-boot-3-5-upgrade-impact.md)。
 
 参考 PriceSight 项目采用的加权验收方法，本项目阶段 12.4 当前仍建议 **85/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。npm moderate 已清零，OSV-Scanner 主门禁的第一次远程结果待验证；OWASP/NVD 仍是 supplemental 外部访问受限证据。评分未因新增扫描配置机械上调。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-10.json)。
 

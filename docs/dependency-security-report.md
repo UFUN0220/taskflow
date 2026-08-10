@@ -61,6 +61,10 @@ Batch B 已完成精确版本约束并在远程 run `31415397055` 通过 Maven/T
 
 本阶段不会修改依赖版本、添加 suppression 或降低 CVSS 门槛；OWASP 与 OSV 的 artifact-level 对照见[依赖漏洞归因与双扫描器对照](dependency-vulnerability-triage-2026-08-10.md)。评分继续保持 85/100，阶段 13 不启动。
 
+## Stage 11.5B-E2E：升级后浏览器回归（2026-08-11）
+
+本地 acceptance-only 随机凭据已通过进程环境变量注入，未写入仓库。当前提交重新打包并构建镜像后，acceptance health、HttpOnly Cookie/CSRF、登录、`/api/auth/me`、任务列表、logout 和旧会话 401 全部通过。真实 Chromium 结果：direct `8/9` 后 `9/9`；Nginx proxy `8/9` 后 `9/9`。两次首轮失败均为业务 STOMP MESSAGE 偶发未到达，虽然 `CONNECTED`、`SUBSCRIBE`、`SUBSCRIPTION_READY` 和数据库通知事实已存在；失败 trace/screenshot/video 保留，详细报告见 [`e2e-browser-report-2026-08-11-stage11-5b.md`](e2e-browser-report-2026-08-11-stage11-5b.md)。因此不把本次依赖升级后的浏览器回归写成稳定 9/9，评分保持 85/100，Stage 13 不启动。
+
 ## 1. 治理前后摘要
 
 | 检查 | 治理前 | 治理后 | 结论 |
