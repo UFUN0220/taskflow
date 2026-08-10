@@ -36,9 +36,10 @@
 | Run | Cache | NVD_API_KEY | Update/scan duration | Reports | Classification |
 |---|---|---|---|---|---|
 | 第一轮（run `31394054175` / job `93472490228`） | miss；日志为 `Cache not found` | `NOT_SET`（仓库 Secret 列表为空） | OWASP 13:42:20Z–14:45:12Z；约 62 分钟后 runner shutdown | 无，cache/gate/upload 被取消跳过 | `SCAN_INFRA_FAILURE`；进程实际 exit 143，硬取消导致分类文件未能落盘 |
-| 第二轮 | 未执行；先决条件是配置 `NVD_API_KEY` | 待配置后记录 SET/NOT_SET | 待执行 | 待执行 | 待执行 |
+| 第二轮（run `31400580061` / job `93494241832`） | miss；日志为 `Cache not found` | `NOT_SET`（仓库 Secret 列表仍为空） | 13:55:22Z–13:55:23Z；缺 key 后约 1 秒快速失败 | 已上传 artifact `9067520875`（744,805 bytes） | `SCAN_INFRA_FAILURE`；exit 78，统一 gate 失败 |
+| 真正热缓存验证轮 | 未执行；先决条件是配置 `NVD_API_KEY` 并完成一轮冷启动 | 待配置后记录 SET/NOT_SET | 待执行 | 待执行 | 待执行 |
 
-远程日志同时确认：NVD 374,922 条记录从 13:43:06Z 开始下载，14:44:02Z 到 80,000（21%），14:45:12Z 收到 shutdown signal 并 exit 143；没有 403/429、OOM 或 CVSS gate 输出。因此这不是漏洞门禁失败，而是无 API Key 冷启动被 runner 超时取消。当前 GitHub 仓库未配置 `NVD_API_KEY`，无法安全伪造第二轮 cache-hit 证据。配置 Secret 后，应先触发一轮允许完成并保存 cache 的冷启动，再触发第二轮确认 `cache-hit=true`。
+远程日志同时确认：NVD 374,922 条记录从 13:43:06Z 开始下载，14:44:02Z 到 80,000（21%），14:45:12Z 收到 shutdown signal 并 exit 143；没有 403/429、OOM 或 CVSS gate 输出。因此第一轮不是漏洞门禁失败，而是无 API Key 冷启动被 runner 超时取消。第二轮证明缺少 key 时会快速、可观测地阻断并上传 artifact，但不产生 NVD 报告，也不等同于 cache-hit。当前 GitHub 仓库未配置 `NVD_API_KEY`，无法安全伪造热缓存证据。配置 Secret 后，应先触发一轮允许完成并保存 cache 的冷启动，再触发真正热缓存轮确认 `cache-hit=true`。
 
 在两轮远程结果完成前，项目验收报告中的“OWASP 未完成”事实保持不变，评分继续保持 85/100；本阶段当前为外部 Secret 配置阻塞，不能进入阶段 13。
 
