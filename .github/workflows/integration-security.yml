@@ -95,6 +95,16 @@ jobs:
         run: |
           started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           echo "$started_at" > "$RUNNER_TEMP/dependency-check-started-at"
+          if [ -z "${NVD_API_KEY:-}" ]; then
+            echo "NVD_API_KEY is not configured; refusing a slow unauthenticated NVD cold start." | tee "$RUNNER_TEMP/dependency-check.log"
+            finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            echo "$finished_at" > "$RUNNER_TEMP/dependency-check-finished-at"
+            echo "78" > "$RUNNER_TEMP/dependency-check.exit"
+            echo "SCAN_INFRA_FAILURE" > "$RUNNER_TEMP/dependency-check.classification"
+            echo "OWASP Dependency-Check exit code: 78"
+            echo "OWASP classification: SCAN_INFRA_FAILURE"
+            exit 0
+          fi
           set +e
           set -o pipefail
           bash ./mvnw -Psecurity-scan -DskipTests \

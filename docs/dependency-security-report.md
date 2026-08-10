@@ -17,7 +17,8 @@
 - 使用 `actions/cache/restore@v5` 与 `actions/cache/save@v5` 缓存 `${{ runner.temp }}/dependency-check-data`。key 为 `${{ runner.os }}-dependency-check-v12.1-data`，包含 runner OS 与 Dependency-Check major/minor 版本，restore key 允许同版本持续更新，不绑定业务 `pom.xml` 全量 hash。
 - workflow 只输出 `NVD_API_KEY configured: true/false`，同时记录 cache hit、开始/结束时间、exit code、分类和扫描日志；不输出 Secret。
 - 分类固定为 `SCAN_PASS`、`VULNERABILITY_GATE_FAILURE` 或 `SCAN_INFRA_FAILURE`。前两类都继续阻断 gate；没有报告或报告解析不出 CVSS 高危证据时，不得伪装成漏洞失败。
-- 无论扫描成功、漏洞失败或基础设施失败，artifact 都尝试上传报告、日志、exit/classification/cache/key-status 文件。
+- 缺少 `NVD_API_KEY` 时，扫描步骤快速写入 `SCAN_INFRA_FAILURE` 和 exit code 78，再由统一 gate 阻断；不会继续执行一个不可控的未认证 NVD 冷启动。
+- 正常完成、漏洞失败或可控基础设施失败时，artifact 都尝试上传报告、日志、exit/classification/cache/key-status 文件；硬 runner shutdown 仍可能在上传前终止整个 job，这是本轮已观测到的限制。
 
 ### 本地验证
 
@@ -34,10 +35,12 @@
 
 | Run | Cache | NVD_API_KEY | Update/scan duration | Reports | Classification |
 |---|---|---|---|---|---|
-| 第一轮 | 待远程验证 | workflow 只输出布尔值 | 待远程验证 | 待远程验证 | 待远程验证 |
-| 第二轮 | 必须确认 cache hit | workflow 只输出布尔值 | 与第一轮比较 | 待远程验证 | 待远程验证 |
+| 第一轮（run `31394054175` / job `93472490228`） | miss；日志为 `Cache not found` | `NOT_SET`（仓库 Secret 列表为空） | OWASP 13:42:20Z–14:45:12Z；约 62 分钟后 runner shutdown | 无，cache/gate/upload 被取消跳过 | `SCAN_INFRA_FAILURE`；进程实际 exit 143，硬取消导致分类文件未能落盘 |
+| 第二轮 | 未执行；先决条件是配置 `NVD_API_KEY` | 待配置后记录 SET/NOT_SET | 待执行 | 待执行 | 待执行 |
 
-在两轮远程结果完成前，项目验收报告中的“OWASP 未完成”事实保持不变，评分继续保持 85/100。
+远程日志同时确认：NVD 374,922 条记录从 13:43:06Z 开始下载，14:44:02Z 到 80,000（21%），14:45:12Z 收到 shutdown signal 并 exit 143；没有 403/429、OOM 或 CVSS gate 输出。因此这不是漏洞门禁失败，而是无 API Key 冷启动被 runner 超时取消。当前 GitHub 仓库未配置 `NVD_API_KEY`，无法安全伪造第二轮 cache-hit 证据。配置 Secret 后，应先触发一轮允许完成并保存 cache 的冷启动，再触发第二轮确认 `cache-hit=true`。
+
+在两轮远程结果完成前，项目验收报告中的“OWASP 未完成”事实保持不变，评分继续保持 85/100；本阶段当前为外部 Secret 配置阻塞，不能进入阶段 13。
 
 ## 1. 治理前后摘要
 
