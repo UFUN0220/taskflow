@@ -4,22 +4,22 @@
   "baseline": "2026-08-09 acceptance score 82/100",
   "score": 85,
   "conclusion": "本地工程基线有条件通过；生产发布不通过",
-  "evidenceBoundary": "真实 Chromium 后端直连与 acceptance Compose；Nginx /ws 代理路径尚未闭环；不代表生产 HA、云 Ingress、跨实例 WebSocket 广播或生产容量",
+  "evidenceBoundary": "真实 Chromium 后端直连与 Docker Compose Nginx /ws 代理路径、Stage12 Testcontainers；不代表生产 HA、云 Ingress、跨实例 WebSocket 广播或生产容量",
   "dimensions": [
     { "name": "需求覆盖与核心功能", "weight": 15, "score": 88, "weighted": 13.2, "evidence": "acceptance Playwright 连续 3 次 9/9，真实 STOMP 通知和离线补拉通过" },
     { "name": "架构与可解释性", "weight": 15, "score": 86, "weighted": 12.9, "evidence": "模块化单体、MySQL/Redis/RabbitMQ/MinIO 职责、Principal/userId 对齐和持久通知事实边界可解释" },
-    { "name": "安全与数据保护", "weight": 15, "score": 78, "weighted": 11.7, "evidence": "HttpOnly Cookie、CSRF、prod Secure、Redis 会话撤销和 Cookie WebSocket 已有代码/测试/本地证据；npm audit moderate/high/critical 为 0，但 OWASP 仍有 79 high、25 critical，生产 Secret 生命周期、TLS/Ingress 和依赖风险仍未完成" },
-    { "name": "测试、构建与回归", "weight": 15, "score": 90, "weighted": 13.5, "evidence": "最终源码 Maven/Testcontainers、前端 npm ci/typecheck/build 和后端直连 Chromium 9/9 通过；Nginx /ws 路径为 6/9，远程 CI 为 NOT_REMOTE_VERIFIED" },
+    { "name": "安全与数据保护", "weight": 15, "score": 78, "weighted": 11.7, "evidence": "HttpOnly Cookie、CSRF、prod Secure、Redis 会话撤销和 Cookie WebSocket 已有代码/测试/本地证据；远程 npm audit 为 0 vulnerabilities，但本次 OWASP 在 NVD 下载 48% 时被 runner shutdown，未形成最终扫描结论；生产 Secret 生命周期、TLS/Ingress 和依赖风险仍未完成" },
+    { "name": "测试、构建与回归", "weight": 15, "score": 90, "weighted": 13.5, "evidence": "远程 fast-check PASS；integration-security 的 Maven 84 tests/0 failures/0 skipped、Stage12 Testcontainers 与覆盖率通过，前端 npm ci/npm audit 通过；OWASP 后续中断，不能把 integration-security 整体写成 PASS" },
     { "name": "评估可信度与可观测性", "weight": 15, "score": 86, "weighted": 12.9, "evidence": "真实浏览器 MESSAGE、通知 UI、断线补拉和失败证据路径可复核；同参数性能复测仍未执行" },
     { "name": "运行集成与恢复就绪度", "weight": 15, "score": 85, "weighted": 12.75, "evidence": "Compose 健康、保卷恢复、浏览器断线重连/补拉通过；Ingress Controller、跨实例广播和中间件 HA 未验证" },
-    { "name": "工程治理", "weight": 5, "score": 68, "weighted": 3.4, "evidence": "两层 CI、JaCoCo 和现有 npm/OWASP 扫描 fail-closed gate 已存在，npm 已清零；OWASP 本地扫描 exit 1，远程 integration-security 为 NOT_REMOTE_VERIFIED，actionlint 为 NOT_EXECUTED" },
+    { "name": "工程治理", "weight": 5, "score": 68, "weighted": 3.4, "evidence": "两层 CI、JaCoCo 和 npm/OWASP fail-closed gate 已存在；fast-check 远程 PASS，integration-security 的测试/npm 步骤 PASS，但 OWASP 因 NVD 无 key 时长时间下载后被 runner shutdown，gate 未执行，actionlint 为 NOT_EXECUTED" },
     { "name": "文档与交付可信度", "weight": 5, "score": 96, "weighted": 4.8, "evidence": "README、CHANGELOG、阶段 10 浏览器报告和验收报告已同步本地证据与生产边界" }
   ],
   "openRisks": [
     "生产 TLS/WSS、可信代理、Ingress Controller、证书轮换和外部 Secret 生命周期",
     "多实例 WebSocket 广播和中间件高可用",
     "同参数性能优化后复测、RabbitMQ retry/DLQ/replay 和完整故障事实快照",
-    "OWASP/NVD 在线依赖风险治理和远程 CI integration-security 复验",
-    "前端 Nginx /ws 代理路径未完成真实 STOMP MESSAGE 闭环；后端直连 9/9 不代表代理 9/9"
+    "OWASP/NVD 在线依赖风险治理：当前远程扫描在 48% 下载时被取消，尚无最终 CVE gate 结论",
+    "生产 TLS/WSS、可信代理、Ingress Controller、证书轮换和外部 Secret 生命周期；本地 Nginx /ws 真实 MESSAGE 已闭环，但不代表生产代理能力"
   ]
 }

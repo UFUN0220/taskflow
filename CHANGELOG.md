@@ -1,11 +1,13 @@
 # Changelog
 
+- 阶段 12.2：远程 GitHub Actions 已确认 Stage12 Testcontainers 4/4（整体 Maven 84/0/0）通过；fast-check 通过，npm audit 为 0 vulnerabilities。OWASP 因无 NVD API key 长时间下载后 runner shutdown 被取消，依赖安全门禁仍未闭环，评分保持 85/100。
+
 ## GitHub Actions CI 修复与阶段 12 本地运行验证 - 2026-08-10
 
 - 删除 workflow job 级别无效的 `runner.temp` Maven 用户目录引用，解决 workflow 解析阶段 0 秒失败；fast-check 已真实通过。
 - 修复附件文件名在 Linux runner 上未规范化 Windows 反斜杠的问题，完整本地 Maven 回归 84 tests、0 failures、5 skipped。
 - Stage12 Testcontainers 本地真实通过 4 tests、0 failures、0 skipped：Rabbit retry/DLQ/replay/幂等、Redis 派生状态重建、MinIO 成功/失败/孤儿补偿、MySQL 同容器 restart 后 Flyway V8 与事实快照保持。
-- integration-security 的后续远程结果仍待本次修复推送后复验；此前失败还暴露了 Maven 步骤失败时依赖扫描输出文件不存在的 CI 门禁问题，本轮已增加 always 条件和缺失输出 fail-closed 检查。
+- integration-security 的远程复验已完成 Maven/Testcontainers/JaCoCo 与 npm audit；OWASP 因 NVD 无 API key 长时间下载后 runner shutdown 被取消。此前暴露的 Maven 失败时依赖扫描输出文件不存在问题，本轮已增加 always 条件和缺失输出 fail-closed 检查。
 
 ## 2026-08-10 — 调优阶段 11.6
 
