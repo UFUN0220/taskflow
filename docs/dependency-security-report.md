@@ -2,7 +2,7 @@
 
 本报告只记录本轮实际执行结果。`target/` 已被 Git 忽略；最终源码对应的原始 OWASP 报告副本为 `target/phase11-owasp-final.json` 和 `target/phase11-owasp-final.xml`。报告中的 CVE 命中是 Dependency-Check 的 CPE/NVD 最佳努力结果，hosted suppressions 下载失败时不能直接当作已确认可利用漏洞，也不能当作零漏洞。
 
-## 阶段 12.3：确定性扫描收口（当前状态）
+## 阶段 12.3：确定性扫描收口（历史状态，已由阶段 12.4 重新定位）
 
 当前状态：`SCAN_INFRA_NOT_CLOSED`。本阶段只改进扫描运行条件和结果分类，不修改 Stage12 reliability 测试、不升级依赖、不添加 suppression。
 
@@ -49,7 +49,7 @@
 
 主依赖漏洞门禁改为 Google 官方 OSV-Scanner reusable workflow `v2.5.0`，递归扫描仓库中的 `pom.xml` 与 `frontend/package-lock.json`，漏洞发现和扫描基础设施失败都必须阻断该 job，并上传 SARIF/官方扫描结果。Maven 传递依赖默认走 deps.dev 解析；OSV 当前不覆盖 Maven test scope，故 Testcontainers/Maven 回归继续独立保留。
 
-当前等待第一次真实远程 OSV run，以下字段必须以 run/job/artifact 证据回填：OSV version、Maven dependencies discovered、OSV vulnerabilities、exit code、SARIF/report artifact、job conclusion。若 OSV 官方数据源不可达，分类为 `OSV_SCAN_INFRA_FAILURE`，不得写成无漏洞。
+第一次真实远程 OSV run 已完成：run `31408614816` / job `93520987366`，OSV-Scanner `v2.5.0`；`pom.xml` 发现 27 packages，`frontend/package-lock.json` 发现 220 packages，过滤 15 个本地/不可扫描包；21 个 Maven package 受影响、70 个漏洞（7 Critical、27 High、27 Medium、9 Low、0 Unknown）；SARIF artifact `9070667075` 已上传并进入 Code Scanning。scanner 完成但 reporter 因漏洞发现失败，job 为 `VULNERABILITY_GATE_FAILURE`，不是 `OSV_SCAN_INFRA_FAILURE`。若未来 OSV 官方数据源不可达，必须分类为 `OSV_SCAN_INFRA_FAILURE`，不得写成无漏洞。
 
 本阶段不会修改依赖版本、添加 suppression 或降低 CVSS 门槛；OWASP 与 OSV 的 artifact-level 对照见[依赖漏洞归因与双扫描器对照](dependency-vulnerability-triage-2026-08-10.md)。评分继续保持 85/100，阶段 13 不启动。
 

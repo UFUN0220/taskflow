@@ -36,7 +36,7 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 当前阶段 19 已完成登录、Redis 会话标记、后端登出撤销、登录失败限流、前端退出体验、HttpOnly Cookie/CSRF、Token 兼容接口、任务与项目基础流程、评论、附件、通知中心、用户/角色/部门管理、统一错误处理、自动化测试、性能工具、全容器部署、本地 Kubernetes 应用层清单、安全质量审查、阶段5部分故障恢复演练、阶段7最终复验、阶段10真实浏览器通知闭环和基于已验证代码的面试简历材料。阶段 9 已移除正式 React 流程对 localStorage JWT 的读写；生产 TLS、外部密钥轮换、真实 Ingress、跨实例 WebSocket 广播和 HA 仍未完成。
 
-2026-08-11 阶段 12.4 当前结论：npm 官方 audit 为 moderate/high/critical 全部 0；OSV-Scanner 已接入为主依赖漏洞门禁，第一次远程 run 结果待回填；Maven OWASP Dependency-Check 保留为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，本地报告仍有真实高危记录，不能视为依赖零漏洞。项目可在本地 Compose 和隔离 acceptance Compose 环境运行和演示；上述结果仍不等同于生产容量、生产 Ingress 或生产高可用，项目暂不判定为生产就绪。详见[依赖漏洞治理与 CI 门禁记录](docs/dependency-security-report.md)、[依赖漏洞归因](docs/dependency-vulnerability-triage-2026-08-10.md)和[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
+2026-08-11 阶段 12.4 当前结论：npm 官方 audit 为 moderate/high/critical 全部 0；OSV-Scanner v2.5.0 已真实扫描 Maven 27 packages 与 frontend 220 packages，发现 70 个 Maven 漏洞并正确阻断主门禁；Maven OWASP Dependency-Check 保留为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，本地报告仍有真实高危记录，不能视为依赖零漏洞。项目可在本地 Compose 和隔离 acceptance Compose 环境运行和演示；上述结果仍不等同于生产容量、生产 Ingress 或生产高可用，项目暂不判定为生产就绪。详见[依赖漏洞治理与 CI 门禁记录](docs/dependency-security-report.md)、[依赖漏洞归因](docs/dependency-vulnerability-triage-2026-08-10.md)和[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
 参考 PriceSight 项目采用的加权验收方法，本项目阶段 12.4 当前仍建议 **85/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。npm moderate 已清零，OSV-Scanner 主门禁的第一次远程结果待验证；OWASP/NVD 仍是 supplemental 外部访问受限证据。评分未因新增扫描配置机械上调。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-10.json)。
 
