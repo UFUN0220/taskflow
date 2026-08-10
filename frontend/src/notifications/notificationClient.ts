@@ -1,4 +1,4 @@
-import { apiRequest, getAccessToken } from '../api'
+import { apiRequest, isBrowserAuthenticated } from '../api'
 
 export type NotificationItem = {
   notificationId: number | null
@@ -21,25 +21,25 @@ type StompFrame = {
   body: string
 }
 
-export function currentAccessToken(): string | null {
-  return getAccessToken()
+export function browserSessionAvailable(): boolean {
+  return isBrowserAuthenticated()
 }
 
-export async function fetchNotifications(token: string, status: 'UNREAD' | 'READ' = 'UNREAD') {
-  const page = await apiRequest<{ records: NotificationItem[] }>(`/api/notifications?page=1&size=50&status=${status}`, {}, token)
+export async function fetchNotifications(status: 'UNREAD' | 'READ' = 'UNREAD') {
+  const page = await apiRequest<{ records: NotificationItem[] }>(`/api/notifications?page=1&size=50&status=${status}`)
   return page.records
 }
 
-export async function fetchUnreadCount(token: string) {
-  return apiRequest<number>('/api/notifications/unread-count', {}, token)
+export async function fetchUnreadCount() {
+  return apiRequest<number>('/api/notifications/unread-count')
 }
 
-export async function markNotificationRead(token: string, notificationId: number) {
-  await apiRequest<null>(`/api/notifications/${notificationId}/read`, { method: 'PATCH' }, token)
+export async function markNotificationRead(notificationId: number) {
+  await apiRequest<null>(`/api/notifications/${notificationId}/read`, { method: 'PATCH' })
 }
 
-export async function markAllNotificationsRead(token: string) {
-  await apiRequest<number>('/api/notifications/read-all', { method: 'POST' }, token)
+export async function markAllNotificationsRead() {
+  await apiRequest<number>('/api/notifications/read-all', { method: 'POST' })
 }
 
 export class NotificationRealtimeClient {
@@ -50,7 +50,6 @@ export class NotificationRealtimeClient {
   private stopped = false
 
   constructor(
-    private readonly token: string,
     private readonly onNotification: (notification: NotificationItem) => void,
     private readonly onStatus: (status: NotificationSocketStatus) => void,
   ) {}
@@ -78,10 +77,21 @@ export class NotificationRealtimeClient {
       this.send('CONNECT', {
         'accept-version': '1.2',
         'heart-beat': '10000,10000',
-        Authorization: `Bearer ${this.token}`,
       })
     }
-    this.socket.onmessage = (event) => this.receive(String(event.data))
+    this.socket.onmessage = (event) => {
+      if (typeof event.data === 'string') {
+        this.receive(event.data)
+      } else if (event.data instanceof ArrayBuffer) {
+        this.receive(new TextDecoder().decode(event.data))
+      } else if (ArrayBuffer.isView(event.data)) {
+        this.receive(new TextDecoder().decode(event.data.buffer))
+      } else if (event.data instanceof Blob) {
+        void event.data.text().then((data) => this.receive(data))
+      } else {
+        void new Response(event.data).text().then((data) => this.receive(data))
+      }
+    }
     this.socket.onerror = () => this.onStatus('ERROR')
     this.socket.onclose = () => {
       this.socket = null

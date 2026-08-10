@@ -15,6 +15,7 @@ import yvon.backend.auth.AuthSessionService;
 import yvon.backend.auth.JwtTokenService;
 import yvon.backend.auth.SysUserEntity;
 import yvon.backend.auth.UserPrincipal;
+import yvon.backend.auth.AuthTokenResolver;
 import yvon.backend.notification.NotificationWebSocketChannelInterceptor;
 
 import java.util.List;
@@ -84,6 +85,27 @@ class NotificationWebSocketChannelInterceptorTest {
         Message<?> subscribe = MessageBuilder.createMessage(new byte[0], subscribeAccessor.getMessageHeaders());
         Message<?> result = interceptor.preSend(subscribe, channel);
 
+        StompHeaderAccessor resultAccessor = MessageHeaderAccessor.getAccessor(result, StompHeaderAccessor.class);
+        assertThat(resultAccessor).isNotNull();
+        assertThat(resultAccessor.getUser()).isNotNull();
+        assertThat(resultAccessor.getUser().getName()).isEqualTo("11");
+    }
+
+    @Test
+    void acceptsSameOriginCookieTokenCarriedByHandshakeAttributes() {
+        UserPrincipal user = user(11L, "alice");
+        when(userDetailsService.loadUserByUsername("alice")).thenReturn(user);
+        when(sessionService.isActive(any(Claims.class))).thenReturn(true);
+        String token = tokenService.issue(user);
+
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.CONNECT);
+        accessor.setSessionId("session-cookie-1");
+        HashMap<String, Object> attributes = new HashMap<>();
+        attributes.put(AuthTokenResolver.WEBSOCKET_COOKIE_TOKEN_ATTRIBUTE, token);
+        accessor.setSessionAttributes(attributes);
+        Message<?> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+
+        Message<?> result = interceptor.preSend(message, channel);
         StompHeaderAccessor resultAccessor = MessageHeaderAccessor.getAccessor(result, StompHeaderAccessor.class);
         assertThat(resultAccessor).isNotNull();
         assertThat(resultAccessor.getUser()).isNotNull();

@@ -9,8 +9,9 @@
 - Spring Security 增加 `CSP`、`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy` 和生产 HSTS；CSP 可通过 `TASKFLOW_SECURITY_HEADERS_CSP` 调整；
 - prod 仅配置 Actuator `health`，关闭 Swagger/OpenAPI UI 与 JSON；前端 Nginx 只代理精确的 `/actuator/health`，其他 Actuator 路径返回 404；
 - 应用默认 `server.forward-headers-strategy=none`，不信任任意 `X-Forwarded-For`/`X-Forwarded-Proto`。若部署在可信反向代理后，必须把代理网络边界、Header 清洗和 HTTPS/WSS 终止策略一并配置和验证；
-- CSRF 目前保持关闭，因为 REST 和 STOMP 都使用显式 Bearer Token。若以后迁移 HttpOnly Cookie，必须同步启用并测试 CSRF、SameSite、Secure、登出和 STOMP 鉴权，不能只改前端存储位置；
-- 前端仍使用 `localStorage` 保存 Bearer Token。本阶段没有做半成品 Cookie 迁移，CSP 只降低脚本注入面，不能消除 XSS 读取 Token 的风险。
+- 浏览器认证使用 profile 控制的 HttpOnly `TASKFLOW_ACCESS` Cookie；dev/test/acceptance 默认 `Secure=false` 以支持本地 HTTP，prod 强制 `Secure=true`，默认 `SameSite=Lax`、`Path=/`，过期时间与 JWT 一致。登录响应仍保留 `accessToken` 字段，供性能脚本、Testcontainers 和其他 Bearer 兼容客户端使用，但正式 React 代码不读取或写入 JWT 到 `localStorage`。
+- Cookie 浏览器写请求启用 Spring Security CSRF：前端从 `/api/auth/csrf` 获取非 HttpOnly `XSRF-TOKEN` 对应值并提交 `X-XSRF-TOKEN`；安全 GET 不需要该 Header。显式 `Authorization: Bearer` 的脚本/兼容客户端走兼容旁路，不应将其误解为浏览器 Cookie 的 CSRF 保护。
+- WebSocket 使用同源 Cookie 完成 HTTP 握手，STOMP `CONNECT` 不再携带 JWT，也不把 JWT 放入 URL；后端把握手 Cookie 传入 STOMP 会话后继续执行 JWT 签名、过期和 Redis active-session 校验。Bearer STOMP CONNECT 仍保留给兼容客户端。
 
 ## RBAC 模型
 

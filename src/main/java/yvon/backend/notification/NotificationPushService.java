@@ -35,4 +35,5 @@ public class NotificationPushService {
                     userId, notification.notificationId(), notification.aggregateId(), exception);
         }
     }
+
 }

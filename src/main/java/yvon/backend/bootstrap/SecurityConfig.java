@@ -10,13 +10,18 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import yvon.backend.auth.ApiSecurityResponseWriter;
+import yvon.backend.auth.AuthProperties;
 import yvon.backend.auth.JwtAuthenticationFilter;
 
 /**
- * API security boundary. Stage 3 uses stateless JWT authentication; database-free tests can
- * explicitly disable it with taskflow.auth.enabled=false.
+ * API security boundary. JWT remains stateless at the protocol level while Redis
+ * supplies active-session checks; browser clients use an HttpOnly cookie and
+ * Bearer clients remain supported for scripts and non-browser integrations.
  */
 @Configuration
 public class SecurityConfig {
@@ -26,11 +31,23 @@ public class SecurityConfig {
             HttpSecurity http,
             @Value("${taskflow.auth.enabled:true}") boolean authEnabled,
             @Value("${taskflow.security.headers.csp:default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; connect-src 'self' ws: wss:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:}") String contentSecurityPolicy,
+            ObjectProvider<AuthProperties> authPropertiesProvider,
             ObjectProvider<JwtAuthenticationFilter> jwtFilter,
             ObjectProvider<ApiSecurityResponseWriter> responseWriterProvider) throws Exception {
-        // REST and STOMP use an explicit Bearer token instead of a browser cookie.
-        // If authentication moves to cookies, CSRF must be enabled and tested here.
-        http.csrf(AbstractHttpConfigurer::disable)
+        AuthProperties authProperties = authPropertiesProvider.getIfAvailable(AuthProperties::new);
+        CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfRepository.setHeaderName("X-XSRF-TOKEN");
+        csrfRepository.setCookieCustomizer(builder -> builder
+                .path(authProperties.getBrowserCookie().getPath())
+                .secure(authProperties.getBrowserCookie().isSecure())
+                .sameSite(authProperties.getBrowserCookie().getSameSite())
+                .httpOnly(false));
+
+        http.csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfRepository)
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers(new NegatedRequestMatcher(new CookieCsrfRequestMatcher(
+                                authProperties.getBrowserCookie().getName()))))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers
                         .contentTypeOptions(Customizer.withDefaults())
@@ -49,6 +66,7 @@ public class SecurityConfig {
             }
             http.authorizeHttpRequests(authorize -> authorize
                             .requestMatchers("/api/health", "/actuator/health", "/api/auth/login",
+                                    "/api/auth/csrf",
                                     "/ws/notifications", "/ws/notifications/**",
                                     "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                             .anyRequest().authenticated())

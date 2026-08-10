@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Bean;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,6 +17,8 @@ import yvon.backend.auth.AuthController;
 import yvon.backend.auth.ApiSecurityResponseWriter;
 import yvon.backend.auth.AuthSessionService;
 import yvon.backend.auth.AuthRateLimiter;
+import yvon.backend.auth.AuthProperties;
+import yvon.backend.auth.AuthTokenResolver;
 import yvon.backend.auth.JwtTokenService;
 import yvon.backend.auth.SysUserMapper;
 import yvon.backend.auth.UserPrincipal;
@@ -35,7 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "taskflow.auth.enabled=true",
         "taskflow.auth.jwt-secret=test-only-taskflow-secret-01234567890123456789"
 })
-@Import({SecurityConfig.class, GlobalExceptionHandler.class, TraceIdFilter.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class, TraceIdFilter.class,
+        AuthControllerTest.TestAuthPropertiesConfiguration.class})
 class AuthControllerTest {
 
     @Autowired
@@ -59,6 +64,19 @@ class AuthControllerTest {
     @MockBean
     private ApiSecurityResponseWriter responseWriter;
 
+    @MockBean
+    private AuthTokenResolver tokenResolver;
+
+    @TestConfiguration
+    static class TestAuthPropertiesConfiguration {
+        @Bean
+        AuthProperties authProperties() {
+            AuthProperties properties = new AuthProperties();
+            properties.setJwtSecret("test-only-taskflow-secret-01234567890123456789");
+            return properties;
+        }
+    }
+
     @Test
     void loginReturnsTokenEnvelope() throws Exception {
         yvon.backend.auth.SysUserEntity user = new yvon.backend.auth.SysUserEntity();
@@ -78,6 +96,10 @@ class AuthControllerTest {
                         .content("{\"login\":\"admin\",\"password\":\"secret\"}"))
                 .andExpect(status().isOk())
                 .andExpect(header().exists(TraceIdFilter.HEADER_NAME))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("TASKFLOW_ACCESS=jwt-test-token"),
+                        org.hamcrest.Matchers.containsString("HttpOnly"),
+                        org.hamcrest.Matchers.containsString("SameSite=Lax"))))
                 .andExpect(jsonPath("$.code").value("0"))
                 .andExpect(jsonPath("$.data.accessToken").value("jwt-test-token"))
                 .andExpect(jsonPath("$.data.userId").value(3));
@@ -103,11 +125,17 @@ class AuthControllerTest {
     @Test
     @WithMockUser(username = "admin")
     void logoutRevokesThePresentedToken() throws Exception {
+        when(tokenResolver.resolve(any())).thenReturn("jwt-test-token");
         mockMvc.perform(post("/api/auth/logout")
                         .header("Authorization", "Bearer jwt-test-token"))
                 .andExpect(status().isOk())
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("TASKFLOW_ACCESS="),
+                        org.hamcrest.Matchers.containsString("Max-Age=0"),
+                        org.hamcrest.Matchers.containsString("HttpOnly"))))
                 .andExpect(jsonPath("$.code").value("0"));
 
         org.mockito.Mockito.verify(sessionService).revoke("jwt-test-token");
     }
+
 }

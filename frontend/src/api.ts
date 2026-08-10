@@ -14,34 +14,52 @@ export type User = { userId: number; username: string; employeeNo: string; displ
 export type Role = { roleId: number; roleCode: string; roleName: string; status: string; builtIn: boolean; version: number; permissionCodes: string[]; scopeType: string | null }
 export type DepartmentNode = { id: number; parentId: number | null; departmentCode: string; departmentName: string; path: string; level: number; children: DepartmentNode[] }
 
-const ACCESS_TOKEN_KEYS = ['taskflow.accessToken', 'accessToken']
+const LEGACY_ACCESS_TOKEN_KEYS = ['taskflow.accessToken', 'accessToken']
+let browserAuthenticated = false
+let csrfToken: string | null = null
 
 export function getAccessToken() {
-  for (const key of ACCESS_TOKEN_KEYS) {
-    const value = window.localStorage.getItem(key)
-    if (value) return value
-  }
+  // Browser authentication is now cookie-based. This function remains for
+  // Bearer-compatible test/integration callers and intentionally returns null
+  // for the React application.
   return null
 }
 
-export function setAccessToken(token: string) {
-  window.localStorage.setItem(ACCESS_TOKEN_KEYS[0], token)
-  window.localStorage.removeItem(ACCESS_TOKEN_KEYS[1])
+export function markBrowserAuthenticated() {
+  browserAuthenticated = true
 }
 
 export function clearAccessToken() {
-  ACCESS_TOKEN_KEYS.forEach((key) => window.localStorage.removeItem(key))
+  LEGACY_ACCESS_TOKEN_KEYS.forEach((key) => window.localStorage.removeItem(key))
+  browserAuthenticated = false
+  csrfToken = null
+}
+
+export function isBrowserAuthenticated() {
+  return browserAuthenticated
+}
+
+export async function fetchCsrfToken() {
+  const response = await fetch('/api/auth/csrf', { credentials: 'include' })
+  const payload = await response.json().catch(() => ({ message: 'CSRF token response was invalid' })) as ApiEnvelope<string>
+  if (!response.ok || !payload.data) throw new ApiError(payload.message || 'CSRF token request failed', response.status, payload.traceId)
+  csrfToken = payload.data
+  return csrfToken
 }
 
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number, public readonly traceId?: string) { super(message) }
 }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}, token = getAccessToken()): Promise<T> {
+export async function apiRequest<T>(path: string, init: RequestInit = {}, token: string | null = null): Promise<T> {
   const headers = new Headers(init.headers)
   if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json')
   if (token) headers.set('Authorization', `Bearer ${token}`)
-  const response = await fetch(path, { ...init, headers })
+  const method = (init.method ?? 'GET').toUpperCase()
+  if (!token && !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+    headers.set('X-XSRF-TOKEN', await fetchCsrfToken())
+  }
+  const response = await fetch(path, { ...init, headers, credentials: 'include' })
   const payload = await response.json().catch(() => ({ message: '服务器返回了无法解析的响应' })) as ApiEnvelope<T>
   if (response.status === 401) {
     clearAccessToken()

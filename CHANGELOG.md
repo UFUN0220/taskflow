@@ -1,5 +1,12 @@
 # Changelog
 
+## 调优阶段 10：浏览器认证通知闭环 - 2026-08-10
+
+- 修复 WebSocket 握手 Principal 与通知 userId 不一致、CONNECT Principal 未传播到后续 SUBSCRIBE 的问题；服务端仅从已验证身份推导用户目的地。
+- 修正 Playwright 运行编号和通知断言，避免小写任务编号及“标题/任务编号”混淆造成的假失败。
+- 真实 Chromium acceptance 复验完成 `3 × 9/9`：登录、401/403、任务创建/更新、重复提交、登出失效、附件、STOMP `MESSAGE` 到通知中心，以及断线重连后的 HTTP 未读补拉均通过。
+- 证据见 `docs/e2e-browser-report-2026-08-10.md`；结果仅代表本地单后端 Compose/simple broker，不代表生产 HA 或跨实例 WebSocket 广播。
+
 ## 调优阶段 8：确定性验收环境 - 2026-08-09
 
 - 新增隔离的 `acceptance` Spring profile 和独立 `docker-compose.acceptance.yml`，使用专属命名卷，不删除现有开发卷。
@@ -309,3 +316,10 @@
 ### Not included
 
 - 未实现数据库表、Flyway 迁移、用户认证、RBAC、任务业务和消息业务。
+## TaskFlow Platform - 阶段 9 浏览器认证 Token 存储安全化 - 2026-08-10
+
+- 浏览器登录改为 profile 控制的 HttpOnly `TASKFLOW_ACCESS` Cookie；保留 JWT、Redis active-session、过期、登出撤销、角色权限和 Bearer 兼容接口。
+- 启用 Spring Security CSRF：React 通过 `/api/auth/csrf` 获取 token 并提交 `X-XSRF-TOKEN`；dev/test/acceptance 支持本地 HTTP，prod Cookie 强制 `Secure=true`。
+- WebSocket 同源握手复用 Cookie，STOMP CONNECT 不再发送 JWT，也不把 JWT 放入 URL；Bearer STOMP 兼容模式保留。
+- 增加 Cookie、CSRF、Bearer 优先级、生产 Secure 属性和 Cookie WebSocket 会话测试；完整后端回归 75/0/1，阶段9 acceptance Cookie/CSRF smoke 通过。
+- 正式 React 不再将 JWT 写入或读取 `localStorage`；Playwright 登录、401、403 和任务真实写链路通过，重复提交与后续通知场景仍保留失败证据，未宣称完整 E2E 通过。

@@ -79,7 +79,7 @@ CI 不应把 `.env`、Compose 展开结果、容器环境 dump 或 Playwright �
 - 初始化器只重置专属 acceptance 用户的密码哈希和管理员角色。建议使用独立用户名；如果操作者在隔离 acceptance 数据库中选择 `admin`，也不会接触普通 Compose 的数据库卷。
 - smoke 只打印通过项和 HTTP 状态，不打印密码、JWT 或完整 Authorization Header。
 - acceptance 卷与普通 Compose 卷分离；停止脚本不删除卷。需要清理时必须由操作者明确执行 Docker 的卷清理操作。
-- 该环境不解决生产环境的 HttpOnly Cookie/CSRF、集中式 Secret 管理、TLS 证书轮换、Ingress HA 或多节点故障恢复。
+- acceptance 浏览器认证使用 HttpOnly `TASKFLOW_ACCESS` Cookie；`/api/auth/csrf` 提供 CSRF token，写请求提交 `X-XSRF-TOKEN`。该环境验证 Cookie/CSRF 行为，但不解决集中式 Secret 管理、TLS 证书轮换、Ingress HA 或多节点故障恢复。
 
 ## 当前验证记录
 
@@ -88,8 +88,14 @@ CI 不应把 `.env`、Compose 展开结果、容器环境 dump 或 Playwright �
 - acceptance 六服务使用专属卷启动并通过健康检查；首次尝试发现原 Dockerfile 在容器内在线下载 Maven 依赖会因网络传输中断超时，随后改为先由项目 Maven Wrapper 构建 JAR，再使用 `Dockerfile.acceptance` 构建 JRE 镜像，后续启动成功。
 - `scripts/acceptance-check.ps1` 通过 health、管理员登录、`/api/auth/me`、任务列表、登出和旧会话 401。
 - 性能工具使用同一组 acceptance 变量完成 1 部门、1 用户、1 任务的数据准备，证据为 `docs/performance-acceptance-prepare-2026-08-09.json`；没有把它包装成完整性能复测。
-- Playwright 9 条中 6 条通过、3 条失败。失败证据保存在 `frontend/test-results/`：重复提交按钮禁用断言、真实 STOMP 通知、断线后的通知补拉。该结果证明人工管理员凭据阻塞已消除，但完整 E2E 仍未通过。
-- 默认后端回归为 69 项执行、0 失败、1 项可选集成测试跳过；显式 Testcontainers verify 为 69 项执行、0 失败、0 跳过；前端 typecheck/build、普通/acceptance Compose config 和 Kustomize 静态校验通过。
+- 历史 2026-08-09 运行曾为 6/9；阶段 10 修正任务编号、通知内容断言和 WebSocket Principal 链路后，2026-08-10 在同一类 acceptance 环境真实 Chromium 连续 3 次完成 9/9（27/27）。详细证据见 `docs/e2e-browser-report-2026-08-10.md`。
+- 阶段 9 后默认后端回归为 75 项执行、0 失败、1 项可选集成测试跳过；显式 Testcontainers verify 为 75 项执行、0 失败、0 跳过；前端 typecheck/build、普通/acceptance Compose config 和 Kustomize 静态校验通过。
 - `acceptance-down.ps1` 已执行，容器和网络停止/移除，但未使用 `-v`，acceptance 数据卷保留。
+
+2026-08-10 阶段 9 追加验证：
+
+- 因旧 acceptance MySQL 卷保留了上一轮初始化账号，未删除旧卷；本次使用新的 Compose 项目名和新隔离卷启动，六服务健康，旧卷保持不变。
+- acceptance smoke 通过：HttpOnly/SameSite Cookie 登录、Cookie `/api/auth/me`、任务列表、CSRF 登出和登出后旧会话 401；未打印密码、JWT 或 Cookie 值。
+- Playwright 使用同一 acceptance 账号运行，现已通过登录、401、普通用户 403、任务真实写链路、重复提交、登出、附件、真实 STOMP 通知和断线补拉；测试仍保持失败时在 `frontend/test-results/` 保存截图/视频/trace 的配置。
 
 这些是当前 Windows/Docker Desktop 环境证据，不等于生产 HA、云服务或真实 Secret Manager 验证。

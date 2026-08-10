@@ -9,7 +9,8 @@ const adminUsername = process.env.TASKFLOW_ACCEPTANCE_ADMIN_USERNAME
 const adminPassword = process.env.TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD
 const e2eUserPassword = process.env.TASKFLOW_ACCEPTANCE_TEST_USER_PASSWORD
 const runId = process.env.TASKFLOW_ACCEPTANCE_RUN_ID ?? String(Date.now())
-const taskPrefix = `TASKFLOW_E2E_${runId}`
+const taskRunId = runId.replace(/[^A-Za-z0-9_-]/g, '_').toUpperCase()
+const taskPrefix = `TASKFLOW_E2E_${taskRunId}`
 
 let api: APIRequestContext
 let adminSession: Session
@@ -67,8 +68,11 @@ test.afterAll(async () => {
 
 test('登录成功、进入系统并获取当前用户', async ({ page }) => {
   await loginUi(page, adminUsername, adminPassword!)
+  const persistedAccessKeys = await page.evaluate(() => Object.keys(window.localStorage)
+    .filter((key) => /token|access/i.test(key)))
+  expect(persistedAccessKeys).toEqual([])
   await expect(page.getByText(/System Administrator|管理员|admin/i).first()).toBeVisible()
-  const me = await page.request.get('/api/auth/me', { headers: authHeader(await browserToken(page)) })
+  const me = await page.request.get('/api/auth/me')
   expect(me.status()).toBe(200)
 })
 
@@ -142,7 +146,7 @@ test('重复提交保护只产生一条创建请求', async ({ page }) => {
   await submitCreateForm(page)
   await expect.poll(() => requestCount).toBe(1)
   const submitButton = page.locator('.ant-modal-content form button[type="submit"]')
-  await expect(submitButton).toBeDisabled()
+  await expect(submitButton).toHaveClass(/ant-btn-loading/)
   await submitButton.click({ timeout: 1_000 }).catch(() => undefined)
   expect(requestCount).toBe(1)
   releaseRequest?.()
@@ -153,26 +157,47 @@ test('重复提交保护只产生一条创建请求', async ({ page }) => {
 
 test('登出后旧会话失效', async ({ page }) => {
   await loginUi(page, adminUsername, adminPassword!)
-  const token = await browserToken(page)
   await page.getByRole('button', { name: '退出' }).click()
   await expect(page.getByLabel('用户名或工号')).toBeVisible()
-  const response = await page.request.get('/api/auth/me', { headers: authHeader(token) })
+  const response = await page.request.get('/api/auth/me')
   expect(response.status()).toBe(401)
 })
 
 test('浏览器真实收到 STOMP 通知消息', async ({ page }) => {
-  await installWebSocketTracker(page)
+  const playwrightReceivedFrames: string[] = []
+  page.on('websocket', (websocket) => {
+    websocket.on('framereceived', (data) => {
+      const frame = data.payload
+      playwrightReceivedFrames.push(typeof frame === 'string' ? frame : `BINARY:${frame.toString('utf8')}`)
+    })
+  })
+  await installWebSocketTracker(page, process.env.TASKFLOW_E2E_DIRECT_WS === 'true')
   await loginUi(page, adminUsername, adminPassword!)
   await openNotificationCenter(page)
   const taskNo = `${taskPrefix}_WS`
   const title = e2eTitle('E2E WebSocket Task')
-  await createTaskThroughUi(page, taskNo, title)
-  const task = await findTask(title)
+  const task = await createTask(adminSession.token, taskNo, title)
   createdTaskIds.push(task.taskId)
-  await page.getByRole('button', { name: title, exact: true }).click()
-  await page.getByRole('button', { name: 'submit', exact: true }).click()
-  await expect.poll(async () => page.evaluate(() => (window as unknown as { __taskflowWsMessages?: string[] }).__taskflowWsMessages?.some((item) => item.startsWith('MESSAGE\n')) ?? false), { timeout: 15_000 }).toBe(true)
-  await expect(page.getByText(title)).toBeVisible()
+  await submitTask(adminSession.token, task.taskId, task.version)
+  await expect.poll(async () => {
+    const debug = await page.evaluate((frames) => {
+      const state = window as unknown as { __taskflowWsMessages?: string[]; __taskflowWsStates?: string[]; __taskflowWsSentFrames?: string[] }
+      return {
+        messages: state.__taskflowWsMessages ?? [],
+        states: state.__taskflowWsStates ?? [],
+        sentFrames: state.__taskflowWsSentFrames ?? [],
+        playwrightReceivedFrames: frames,
+      }
+    }, playwrightReceivedFrames)
+    const notificationsResponse = await page.request.get('/api/notifications?page=1&size=50&status=UNREAD')
+    const notificationsBody = await notificationsResponse.json() as ApiEnvelope<{ records: Array<{ content: string }> }>
+    const notificationContents = notificationsBody.data?.records?.slice(0, 10).map((item) => item.content) ?? []
+    if (!debug.messages.some((item) => item.startsWith('MESSAGE\n') && item.includes(taskNo))) {
+      throw new Error(`STOMP debug: ${JSON.stringify({ ...debug, restStatus: notificationsResponse.status(), notificationContents })}`)
+    }
+    return true
+  }, { timeout: 15_000 }).toBe(true)
+  await expect(page.getByText(taskNo, { exact: false })).toBeVisible()
 })
 
 test('WebSocket 断线重连后通过 HTTP 补拉恢复通知', async ({ page }) => {
@@ -183,17 +208,16 @@ test('WebSocket 断线重连后通过 HTTP 补拉恢复通知', async ({ page })
     const sockets = (window as unknown as { __taskflowSockets?: WebSocket[] }).__taskflowSockets ?? []
     sockets[sockets.length - 1]?.close()
   })
-  const userToken = await browserToken(page)
-  const task = await createTask(userToken, `${taskPrefix}_RECONNECT`, e2eTitle('E2E Reconnect Task'))
+  const task = await createTask(adminSession.token, `${taskPrefix}_RECONNECT`, e2eTitle('E2E Reconnect Task'))
   createdTaskIds.push(task.taskId)
-  await submitTask(userToken, task.taskId, task.version)
+  await submitTask(adminSession.token, task.taskId, task.version)
   await expect.poll(async () => {
-    const response = await page.request.get('/api/notifications?page=1&size=50&status=UNREAD', { headers: authHeader(userToken) })
+    const response = await page.request.get('/api/notifications?page=1&size=50&status=UNREAD')
     const body = await response.json() as ApiEnvelope<{ records: Array<{ content: string }> }>
-    return body.data.records.some((item) => item.content.includes(task.title))
+    return body.data.records.some((item) => item.content.includes(task.taskNo))
   }, { timeout: 20_000 }).toBe(true)
   await expect(page.getByText('实时连接')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByText(task.title)).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText(task.taskNo, { exact: false })).toBeVisible({ timeout: 20_000 })
 })
 
 test('附件上传正向链路', async ({ page }) => {
@@ -224,11 +248,7 @@ async function loginUi(page: Page, username: string, password: string) {
   await expect(page.getByRole('menuitem', { name: /任务中心/ })).toBeVisible()
 }
 
-async function browserToken(page: Page) {
-  return page.evaluate(() => window.localStorage.getItem('taskflow.accessToken') ?? '')
-}
-
-function authHeader(token: string) { return { Authorization: `Bearer ${token}` } }
+function authHeader(token: string) { return token ? { Authorization: `Bearer ${token}` } : {} }
 
 async function createTask(token: string, taskNo: string, title: string): Promise<TaskSummary> {
   const response = await api.post('/api/tasks', {
@@ -280,33 +300,74 @@ function e2eTitle(base: string) {
 
 async function openNotificationCenter(page: Page) {
   await page.getByRole('button', { name: '打开通知中心' }).click()
-  await expect(page.getByText('实时连接')).toBeVisible({ timeout: 15_000 })
+  try {
+    await expect(page.getByText('实时连接')).toBeVisible({ timeout: 15_000 })
+  } catch (error) {
+    const debug = await page.evaluate(() => {
+      const state = window as unknown as { __taskflowWsMessages?: string[]; __taskflowWsStates?: string[]; __taskflowWsSentFrames?: string[] }
+      return {
+        messages: state.__taskflowWsMessages ?? [],
+        states: state.__taskflowWsStates ?? [],
+        sentFrames: state.__taskflowWsSentFrames ?? [],
+      }
+    })
+    throw new Error(`Notification connection debug: ${JSON.stringify(debug)}; cause=${String(error)}`)
+  }
 }
 
-async function installWebSocketTracker(page: Page) {
-  await page.addInitScript(() => {
+async function installWebSocketTracker(page: Page, directBackend = false) {
+  await page.addInitScript((useDirectBackend) => {
     const NativeWebSocket = window.WebSocket
     const sockets: WebSocket[] = []
     const messages: string[] = []
     const states: string[] = []
+    const sentFrames: string[] = []
     class TrackedWebSocket extends NativeWebSocket {
       constructor(url: string | URL, protocols?: string | string[]) {
-        super(url, protocols)
+        const actualUrl = useDirectBackend ? (() => {
+          const directUrl = new URL(String(url))
+          directUrl.port = '28080'
+          return directUrl.toString()
+        })() : url
+        super(actualUrl, protocols)
         sockets.push(this)
-        states.push(`CREATED:${String(url)}`)
+        states.push(`CREATED:${String(actualUrl)}`)
         this.addEventListener('open', () => states.push('OPEN'))
         this.addEventListener('error', () => states.push('ERROR'))
         this.addEventListener('close', (event) => states.push(`CLOSE:${event.code}`))
         this.addEventListener('message', (event) => {
-          if (typeof event.data === 'string') messages.push(event.data)
+          states.push(`RAW:${typeof event.data}:${event.data?.constructor?.name ?? 'unknown'}`)
+          try {
+            if (typeof event.data === 'string') {
+              messages.push(event.data)
+            } else if (event.data instanceof ArrayBuffer) {
+              messages.push(new TextDecoder().decode(event.data))
+            } else if (ArrayBuffer.isView(event.data)) {
+              messages.push(new TextDecoder().decode(event.data.buffer))
+            } else if (event.data instanceof Blob) {
+              void event.data.text().then((data) => messages.push(data))
+            } else {
+              void new Response(event.data).text().then((data) => messages.push(data)).catch((error) => {
+                states.push(`DATA_ERROR:${String(error)}`)
+              })
+            }
+          } catch (error) {
+            states.push(`DECODE_ERROR:${String(error)}`)
+          }
         })
+        const nativeSend = this.send.bind(this)
+        this.send = (data: string | ArrayBufferLike | Blob | ArrayBufferView) => {
+          if (typeof data === 'string') sentFrames.push(data)
+          nativeSend(data)
+        }
       }
     }
     window.WebSocket = TrackedWebSocket
     ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[] }).__taskflowSockets = sockets
     ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[] }).__taskflowWsMessages = messages
-    ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[] }).__taskflowWsStates = states
-  })
+    ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[]; __taskflowWsSentFrames: string[] }).__taskflowWsStates = states
+    ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[]; __taskflowWsSentFrames: string[] }).__taskflowWsSentFrames = sentFrames
+  }, directBackend)
 }
 
 async function readApi<T>(response: { ok(): boolean; status(): number; json(): Promise<unknown> }): Promise<T> {

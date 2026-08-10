@@ -2,7 +2,7 @@ import { LogoutOutlined, ProjectOutlined, SettingOutlined, UnorderedListOutlined
 import { Button, Layout, Menu, Space, Spin, Typography, message } from 'antd'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { ApiError, clearAccessToken, currentUser, CurrentUser, getAccessToken, logout as serverLogout } from './api'
+import { ApiError, clearAccessToken, currentUser, CurrentUser, isBrowserAuthenticated, markBrowserAuthenticated, logout as serverLogout } from './api'
 import NotificationCenter from './notifications/NotificationCenter'
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
@@ -15,25 +15,23 @@ const { Header, Sider, Content } = Layout
 export default function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [token, setToken] = useState(getAccessToken())
+  const [authenticated, setAuthenticated] = useState(isBrowserAuthenticated())
   const [user, setUser] = useState<CurrentUser | null>(null)
-  const [checking, setChecking] = useState(Boolean(token))
+  const [checking, setChecking] = useState(true)
 
   const loadSession = async () => {
-    const currentToken = getAccessToken()
-    if (!currentToken) { setToken(null); setUser(null); setChecking(false); return }
     setChecking(true)
-    try { setToken(currentToken); setUser(await currentUser()) }
-    catch (error) { clearAccessToken(); setToken(null); setUser(null); if (error instanceof Error) message.error(error.message) }
+    try { const sessionUser = await currentUser(); markBrowserAuthenticated(); setAuthenticated(true); setUser(sessionUser) }
+    catch (error) { clearAccessToken(); setAuthenticated(false); setUser(null); if (error instanceof Error && (!(error instanceof ApiError) || error.status !== 401)) message.error(error.message) }
     finally { setChecking(false) }
   }
   useEffect(() => { void loadSession() }, [])
-  useEffect(() => { const handler = () => { setToken(null); setUser(null); navigate('/login') }; window.addEventListener('taskflow:unauthorized', handler); return () => window.removeEventListener('taskflow:unauthorized', handler) }, [navigate])
+  useEffect(() => { const handler = () => { clearAccessToken(); setAuthenticated(false); setUser(null); navigate('/login') }; window.addEventListener('taskflow:unauthorized', handler); return () => window.removeEventListener('taskflow:unauthorized', handler) }, [navigate])
 
   const permissions = useMemo(() => new Set(user?.authorities || []), [user])
   const can = (permission: string) => permissions.has(permission)
   if (checking) return <div className="page-loading"><Spin size="large" /></div>
-  if (!token || !user) return <Suspense fallback={<div className="page-loading"><Spin size="large" /></div>}><Routes><Route path="*" element={<LoginPage onLoggedIn={() => void loadSession()} />} /></Routes></Suspense>
+  if (!authenticated || !user) return <Suspense fallback={<div className="page-loading"><Spin size="large" /></div>}><Routes><Route path="*" element={<LoginPage onLoggedIn={() => void loadSession()} />} /></Routes></Suspense>
 
   const logout = async () => {
     try { await serverLogout() }
@@ -42,7 +40,7 @@ export default function App() {
         message.warning('服务器未确认退出，当前令牌将在过期后失效')
       }
     }
-    finally { clearAccessToken(); setToken(null); setUser(null); navigate('/login'); message.success('已退出登录') }
+    finally { clearAccessToken(); setAuthenticated(false); setUser(null); navigate('/login'); message.success('已退出登录') }
   }
   const menuItems = [
     can('task:read') && { key: '/tasks', icon: <UnorderedListOutlined />, label: '任务中心' },

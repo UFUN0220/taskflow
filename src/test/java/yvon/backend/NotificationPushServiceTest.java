@@ -7,7 +7,6 @@ import yvon.backend.notification.NotificationPushService;
 import yvon.backend.notification.NotificationResponse;
 
 import java.time.LocalDateTime;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 

@@ -2,7 +2,7 @@ import { BellOutlined, CheckOutlined, ReloadOutlined } from '@ant-design/icons'
 import { Badge, Button, Drawer, Empty, List, Space, Tag, Typography, message } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  currentAccessToken,
+  browserSessionAvailable,
   fetchNotifications,
   fetchUnreadCount,
   markAllNotificationsRead,
@@ -23,13 +23,13 @@ export default function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [status, setStatus] = useState<NotificationSocketStatus>('DISCONNECTED')
   const [loading, setLoading] = useState(false)
-  const token = useMemo(() => currentAccessToken(), [])
+  const authenticated = useMemo(() => browserSessionAvailable(), [])
 
   const loadUnread = async () => {
-    if (!token) return
+    if (!authenticated) return
     setLoading(true)
     try {
-      const [items, count] = await Promise.all([fetchNotifications(token), fetchUnreadCount(token)])
+      const [items, count] = await Promise.all([fetchNotifications(), fetchUnreadCount()])
       setNotifications(items)
       setUnreadCount(count)
     } catch (error) {
@@ -40,10 +40,9 @@ export default function NotificationCenter() {
   }
 
   useEffect(() => {
-    if (!token) return
+    if (!authenticated) return
     void loadUnread()
     const client = new NotificationRealtimeClient(
-      token,
       (notification) => {
         setNotifications((current) => mergeNotifications(current, notification))
         if (notification.status === 'UNREAD') setUnreadCount((count) => count + 1)
@@ -55,12 +54,12 @@ export default function NotificationCenter() {
     )
     client.connect()
     return () => client.disconnect()
-  }, [token])
+  }, [authenticated])
 
   const markRead = async (notification: NotificationItem) => {
-    if (!token || !notification.notificationId || notification.status === 'READ') return
+    if (!authenticated || !notification.notificationId || notification.status === 'READ') return
     try {
-      await markNotificationRead(token, notification.notificationId)
+      await markNotificationRead(notification.notificationId)
       setNotifications((current) => current.map((item) => item.notificationId === notification.notificationId
         ? { ...item, status: 'READ' }
         : item))
@@ -71,9 +70,9 @@ export default function NotificationCenter() {
   }
 
   const markAllRead = async () => {
-    if (!token || unreadCount === 0) return
+    if (!authenticated || unreadCount === 0) return
     try {
-      await markAllNotificationsRead(token)
+      await markAllNotificationsRead()
       setNotifications((current) => current.map((item) => ({ ...item, status: 'READ' })))
       setUnreadCount(0)
     } catch (error) {
@@ -83,7 +82,7 @@ export default function NotificationCenter() {
 
   return (
     <>
-      <Button type="text" onClick={() => setOpen(true)} disabled={!token} aria-label="打开通知中心">
+      <Button type="text" onClick={() => setOpen(true)} disabled={!authenticated} aria-label="打开通知中心">
         <Badge count={unreadCount} overflowCount={99} size="small">
           <BellOutlined />
         </Badge>
@@ -103,7 +102,7 @@ export default function NotificationCenter() {
           </Space>
         )}
       >
-        {!token ? <Empty description="登录后查看通知" /> : (
+        {!authenticated ? <Empty description="登录后查看通知" /> : (
           <List
             dataSource={notifications}
             locale={{ emptyText: '暂无未读通知' }}

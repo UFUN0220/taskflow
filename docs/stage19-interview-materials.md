@@ -2,7 +2,7 @@
 
 本文只使用当前仓库中已经实现并验证的内容。除非明确标注为“配置目标”或“未验证”，不要把本地 Compose、Kubernetes 清单、测试数据或示例配置描述成生产运行结果。
 
-阶段 7 最终复验后的项目级加权评分为 **80/100**：本地工程基线有条件通过，生产发布不通过。该分数不是 QPS、可用性或安全认证；最终后端回归和 Testcontainers 通过，但当前 E2E、同参数性能复测和 OWASP 依赖扫描分别受凭据/依赖告警边界限制。评分维度和 P0/P1/P2 门禁见[全面验收报告](project-acceptance-report-2026-08-09.md)。
+阶段 10 复验后的项目级加权评分建议为 **85/100**：本地工程基线有条件通过，生产发布不通过。该分数不是 QPS、可用性或安全认证；真实 Chromium 已连续 3 次完成 9/9，包含 STOMP MESSAGE、通知 UI、断线重连和 HTTP 补拉，但同参数性能、生产 Ingress、跨实例广播和 OWASP 依赖风险仍有明确边界。评分维度和 P0/P1/P2 门禁见[全面验收报告](project-acceptance-report-2026-08-09.md)。
 
 ## 一、5 条中文简历描述
 
@@ -19,7 +19,7 @@
 3. 将提醒计划、通知事实和实时推送拆分：`reminder_plan` 保存持久计划，Redis 仅作为调度索引，RabbitMQ 负责异步投递，`notification` 负责用户查询；Redis 索引丢失时通过数据库重建。
 4. 为 RabbitMQ 消费者设计按消息 ID 的幂等处理、有限重试和死信补偿，使用 publisher confirm、mandatory returns、手动 Ack 和 traceId/messageId 传递，避免无限重试和重复通知。
 5. 使用 Spring Security 方法级权限和服务层数据范围双重保护资源访问；数据范围支持 SELF、DEPARTMENT、DEPARTMENT_AND_CHILDREN、PROJECT、ALL，并由后端根据当前用户身份推导过滤条件。
-6. 完成 Docker Compose 六服务健康与保卷重启验证；最终默认 Maven 为 67 项执行、0 失败、1 项可选容器测试跳过，显式 Testcontainers verify 为 67 项执行、0 失败、0 跳过；前端 typecheck/build 通过；Kind `dev` 中完成前后端探针、Pod 恢复和滚动更新验证，并保留本机性能基线。完整浏览器 E2E 和同参数性能复测仍需受控凭据后复验。
+6. 完成 Docker Compose 六服务健康与保卷重启验证；默认 Maven 和显式 Testcontainers verify 均有通过证据，前端 typecheck/build 通过；Kind `dev` 中完成前后端探针、Pod 恢复和滚动更新验证，并保留本机性能基线。阶段 10 使用确定性 acceptance 凭据完成真实 Chromium `3 × 9/9`；同参数性能复测仍需单独执行。
 
 ## 三、30 秒项目介绍
 
@@ -35,7 +35,7 @@
 
 提醒模块把 MySQL 中的 `reminder_plan` 作为事实来源，Redis ZSet 负责调度索引，定时扫描后向 RabbitMQ 发布消息。消费者按消息 ID 和用户 ID 幂等写入通知，失败时最多进行有限次数重试，超过上限记录死信并支持管理员补偿。WebSocket 只负责实时推送，断线后仍通过 HTTP 从通知表补拉。
 
-质量方面，项目有后端单元/接口测试、Testcontainers、JaCoCo、前端构建、Docker Compose 六服务健康与重启验证、Kind 应用层实机验证和阶段15本机性能基线。阶段 1 又补充了生产弱 Secret 拒绝、基础安全 Header 和管理面配置证据。当前能如实报告的是这些本地证据；生产级高可用、Token Cookie 化、外部密钥轮换、真实 Ingress/STOMP 通知、依赖告警治理和目标环境容量仍未完成。
+质量方面，项目有后端单元/接口测试、Testcontainers、JaCoCo、前端构建、Docker Compose 六服务健康与重启验证、Kind 应用层实机验证、阶段 10 真实 Chromium 3×9/9 和阶段15本机性能基线。阶段 1 又补充了生产弱 Secret 拒绝、基础安全 Header 和管理面配置证据。当前能如实报告的是这些本地证据；生产级高可用、外部密钥轮换、真实 Ingress、跨实例 WebSocket 广播、依赖告警治理和目标环境容量仍未完成。
 
 ## 五、实习场景下的个人职责说明
 
@@ -201,7 +201,7 @@ Redis 只承担调度索引；索引丢失后由数据库计划重建。消息�
 17. **数据范围有哪些类型？**  SELF、DEPARTMENT、DEPARTMENT_AND_CHILDREN、PROJECT 和 ALL；服务根据当前用户角色和部门计算可见 ID，再加入查询条件。
 18. **有什么 SQL 注入风险？**  当前审查没有发现用户输入直接进入 SQL；MyBatis 使用 `#{}`，JdbcTemplate 使用 `?`，动态 IN 只动态生成占位符数量，值仍参数绑定。
 19. **为什么登录接口还存在安全遗留？**  当前已有 Redis 按账号/来源的失败窗口限流，但还没有账号锁定或验证码升级；公开部署时需要结合攻击流量和可信代理边界补充风控。
-20. **Token 放在 localStorage 有什么问题？**  XSS 一旦发生，脚本可能读取 Token。阶段 1 没有做不完整的 Cookie 迁移，而是保留 REST/STOMP 一致的 Bearer 模型并增加 CSP；这降低风险但没有消除 localStorage 暴露，生产仍应评估 HttpOnly Cookie + CSRF。
+20. **Token 放在 localStorage 有什么问题？** XSS 一旦发生，脚本可能读取 Token。阶段 9 将正式 React 流程迁移为 HttpOnly Cookie，并用 CSRF Header 保护写请求；登录 JSON/Bearer 兼容接口仍保留给脚本和集成测试，生产仍需在真实 TLS/可信代理边界复验。
 
 ### 任务、状态机与并发
 

@@ -29,6 +29,9 @@ public class AuthProperties {
     @Valid
     private final BootstrapAdmin bootstrapAdmin = new BootstrapAdmin();
 
+    @Valid
+    private final BrowserCookie browserCookie = new BrowserCookie();
+
     public String getJwtSecret() {
         return jwtSecret;
     }
@@ -71,6 +74,10 @@ public class AuthProperties {
 
     public BootstrapAdmin getBootstrapAdmin() {
         return bootstrapAdmin;
+    }
+
+    public BrowserCookie getBrowserCookie() {
+        return browserCookie;
     }
 
     public static class BootstrapAdmin {
@@ -119,5 +126,27 @@ public class AuthProperties {
         public void setPassword(String password) {
             this.password = password;
         }
+    }
+
+    public static class BrowserCookie {
+        private boolean enabled = true;
+        private String name = "TASKFLOW_ACCESS";
+        private String path = "/";
+        private boolean httpOnly = true;
+        private boolean secure;
+        private String sameSite = "Lax";
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getPath() { return path; }
+        public void setPath(String path) { this.path = path; }
+        public boolean isHttpOnly() { return httpOnly; }
+        public void setHttpOnly(boolean httpOnly) { this.httpOnly = httpOnly; }
+        public boolean isSecure() { return secure; }
+        public void setSecure(boolean secure) { this.secure = secure; }
+        public String getSameSite() { return sameSite; }
+        public void setSameSite(String sameSite) { this.sameSite = sameSite; }
     }
 }

@@ -2,12 +2,16 @@
 
 ## 阶段 1 安全基线收敛补充（2026-08-09）
 
+## 阶段 9 浏览器认证补充（2026-08-10）
+
+阶段 9 已将正式 React 浏览器流程从 `localStorage` JWT 迁移为 HttpOnly `TASKFLOW_ACCESS` Cookie，并启用 CSRF Token Header；dev/test/acceptance 使用 `SameSite=Lax`、`Secure=false`，prod 使用 `Secure=true`。登录、Cookie `/me`、CSRF 登出、旧 Redis 会话 401 和同源 WebSocket Cookie 路径已有自动化或 acceptance 证据。登录 JSON 中的 `accessToken` 和 STOMP Bearer 仍仅为脚本与兼容客户端保留，正式 React 不读写 JWT `localStorage`。
+
 阶段 1 已完成并验证：
 
 - `dev`/`test`/`prod` 配置分层；prod 对 JWT、数据库、RabbitMQ、MinIO、bootstrap admin 和 WebSocket 来源执行显式 Secret/弱值拒绝；
 - `.env.example` 和 `k8s/secret.yaml` 不再提供可误用凭据，`.gitignore` 增加证书私钥和运行时 Secret 路径；
 - Spring Security 和前端 Nginx 增加基础 Header/CSP，prod 默认只暴露健康探针并关闭 Swagger/OpenAPI；
-- 保持 Bearer + STOMP CONNECT 的一致性，没有进行不完整的 Cookie 迁移；localStorage 风险仍明确保留；
+- 阶段 9 已完成浏览器 Cookie/CSRF 迁移；Bearer + STOMP CONNECT 仍作为兼容客户端路径保留，不把 JWT 放入 WebSocket URL；
 - 66 项后端测试执行、0 失败、1 跳过；前端构建、Compose 模板解析、Kustomize 渲染通过；当前运行 Compose 登录、`/api/auth/me`、登出和旧 Token 401 烟测通过。
 
 阶段 2 补充依赖风险可见性：官方 npm registry 的 `npm audit` 实际完成，当前 lockfile 报告 2 个 moderate、0 个 high/critical；OWASP/NVD 扫描已配置但本机超过 5 分钟未完成，未将其写成“漏洞为 0”。
@@ -44,7 +48,7 @@
 | 文件上传 | 已加强 | 限制大小、后缀、MIME 和内容签名；仍不是恶意文件扫描 |
 | 敏感配置 | 部分通过 | prod 已移除敏感默认回退并对弱值 fail-fast；本地 `.env`/Kubernetes Secret 仍需由外部安全注入和轮换 |
 | 日志泄密 | 未发现密码/完整 Token 输出 | 日志主要记录 trace、资源 ID、消息 ID 和异常类型；全量异常堆栈仍需结合生产日志策略审查 |
-| Token 安全 | 部分通过 | JWT 有签名、过期时间、唯一 jti 和 Redis 活动会话撤销；Compose 旧 Token 失效烟测通过；前端 Token 仍存在 `localStorage`，存在 XSS 后被读取的风险 |
+| Token 安全 | 阶段 9 本地范围通过 | JWT 有签名、过期时间、唯一 jti 和 Redis 活动会话撤销；浏览器使用 HttpOnly Cookie + CSRF，正式 React 不读写 `localStorage`；Bearer 兼容旁路、生产 TLS/WSS 和密钥轮换仍未闭环 |
 | 消息重复 | 通过当前范围 | 通知按 `source_message_id` 幂等，消费失败有有限重试和死信记录 |
 | 事务边界 | 通过当前范围 | 核心业务写操作有 `@Transactional`；MinIO 网络调用采用补偿状态，不把长时间对象存储调用包在数据库事务中 |
 | 线程池 | 未发现自建无限线程池 | 使用 Spring 调度和 RabbitMQ listener；生产环境仍应显式核对并发、队列容量和关闭策略 |
@@ -54,7 +58,7 @@
 ## 未解决风险
 
 1. 登录接口现已增加基于 Redis 的账号 + 来源地址失败窗口限制，默认 10 次/60 秒；本地烟测已验证第 11 次返回 429，仍需在真实攻击流量和代理网络边界下验证阈值、可信来源地址和验证码升级策略。
-2. 前端访问令牌使用 `localStorage`，应评估迁移到 HttpOnly、Secure、SameSite Cookie 或更严格的 CSP。
+2. 浏览器 Token 存储已迁移到 Cookie；仍需在目标生产代理上实测 HTTPS/WSS、Cookie Secure、可信转发头和跨域策略。
 3. 默认 JWT Secret、MySQL/RabbitMQ/MinIO 开发凭据仍存在本地模板和 Compose 回退配置中；这些值只能用于个人本地学习环境。
 4. JWT 已通过 Redis 活动会话标记支持主动撤销；用户被禁用、会话过期或主动退出后，HTTP 和 WebSocket 鉴权均会拒绝旧会话。真实 Compose 旧 Token 失效烟测已通过。
 5. Swagger/OpenAPI 和 Actuator 已在 prod 配置层收紧：prod 关闭 OpenAPI、仅暴露 health，Nginx 仅代理精确健康路径；尚未完成生产网络隔离实测。
@@ -66,7 +70,7 @@
 ## 不适合生产使用的部分
 
 - 本地 `.env`/Kubernetes 外部 Secret 的生成、轮换和审计仍未完成；
-- 未配置 TLS、集中式 Secret 管理和生产级 Token 存储策略；登录限流和 Token 撤销已实现本地代码路径，但仍需生产环境验证；
+- 未配置生产 TLS、集中式 Secret 管理和密钥轮换；Cookie/CSRF 和 Token 撤销已实现本地代码路径，但仍需生产环境验证；
 - MySQL、Redis、RabbitMQ、MinIO 单实例；
 - 本地 Kubernetes Secret 外部注入和生产网络隔离仍未验证；
 - 本地 dev profile 仍保留开发型 Actuator/Swagger 便利配置；
@@ -74,7 +78,7 @@
 
 ## 验证结果
 
-- 最新 `./mvnw.cmd test`：66 项执行、0 失败、1 项可选 Testcontainers 测试按默认配置跳过；显式阶段 14 Testcontainers 测试已通过 1 项，并完成 8 条 Flyway 迁移。
+- 最新 `./mvnw.cmd test`：阶段 9 后 75 项执行、0 失败、1 项可选 Testcontainers 测试按默认配置跳过；阶段 9 Cookie/CSRF 定向测试 10/0/0，显式 Testcontainers verify 为 75/0/0。
 - `npm run build`：通过；存在既有的单 JS chunk 大于 500KB 警告；
 - `docker compose config --quiet`：无 `.env` 时按必填 Secret 约束 fail-fast；使用仅存在于当前进程的非敏感测试值解析通过；
 - 阶段 1 后端单元/接口测试覆盖生产弱 Secret 拒绝和基础安全 Header；当前运行 Compose 容器完成认证烟测；由于工作区没有真实 `.env`，未用假值重建现有应用容器，避免把测试凭据写入运行环境；
@@ -84,7 +88,7 @@
 
 ## 下一步建议
 
-1. 将 JWT 迁移到 HttpOnly Cookie 或建立严格 CSP/XSS 防护基线；
+1. 在真实生产 Ingress/TLS/WSS 和外部 Secret 生命周期中复验 Cookie/CSRF 边界；
 3. 使用 Secret Manager/Sealed Secrets/Vault，移除 Compose 生产回退凭据；
 4. 为 Actuator 和 OpenAPI 增加专用观测权限或内网访问策略；
 5. 在有网络和审批的环境执行 npm/Maven/OWASP 依赖漏洞扫描；

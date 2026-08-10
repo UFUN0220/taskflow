@@ -27,21 +27,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenService tokenService;
     private final AuthSessionService sessionService;
     private final UserDetailsService userDetailsService;
+    private final AuthTokenResolver tokenResolver;
 
     public JwtAuthenticationFilter(JwtTokenService tokenService, AuthSessionService sessionService,
-                                   UserDetailsService userDetailsService) {
+                                   UserDetailsService userDetailsService, AuthTokenResolver tokenResolver) {
         this.tokenService = tokenService;
         this.sessionService = sessionService;
         this.userDetailsService = userDetailsService;
+        this.tokenResolver = tokenResolver;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")
-                && SecurityContextHolder.getContext().getAuthentication() == null) {
-            authenticate(header.substring(7).trim(), request);
+        String token = tokenResolver.resolve(request);
+        if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            authenticate(token, request);
         }
         filterChain.doFilter(request, response);
     }

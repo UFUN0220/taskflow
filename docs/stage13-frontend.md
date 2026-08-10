@@ -20,4 +20,4 @@
 
 ## 验证
 
-`npm run build` 已通过。阶段 3 新增 `npm run e2e` Playwright 浏览器套件，覆盖登录、401/403、任务写入、重复提交、登出、附件和通知中心；当前报告记录了真实 Compose 浏览器运行的 4/9 通过结果，WebSocket 订阅失败证据和未完成项见 [`docs/e2e-browser-report-2026-08-09.md`](e2e-browser-report-2026-08-09.md)。
+`npm run build` 已通过。阶段 3 新增 `npm run e2e` Playwright 浏览器套件，覆盖登录、401/403、任务写入、重复提交、登出、附件和通知中心。阶段 10 在隔离 acceptance Compose 环境使用真实 Chromium 连续 3 次完成 9/9，包含 STOMP `MESSAGE` 到通知中心、断线重连和 HTTP 补拉；详见 [`docs/e2e-browser-report-2026-08-10.md`](e2e-browser-report-2026-08-10.md)。

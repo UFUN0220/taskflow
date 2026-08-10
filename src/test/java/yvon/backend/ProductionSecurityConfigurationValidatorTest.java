@@ -7,6 +7,7 @@ import yvon.backend.bootstrap.ProductionSecurityConfigurationValidator;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ProductionSecurityConfigurationValidatorTest {
 
@@ -27,6 +28,15 @@ class ProductionSecurityConfigurationValidatorTest {
 
         assertThatCode(() -> new ProductionSecurityConfigurationValidator(environment(), properties).validateNow())
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void productionCookieConfigurationRequiresSecureTransport() throws Exception {
+        String properties = new String(getClass().getResourceAsStream(
+                "/application-prod.properties").readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertThat(properties).contains("taskflow.auth.browser-cookie.secure=true");
+        assertThat(properties).contains("taskflow.auth.browser-cookie.http-only=true");
     }
 
     private MockEnvironment environment() {

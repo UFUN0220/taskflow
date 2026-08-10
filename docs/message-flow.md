@@ -26,6 +26,6 @@ flowchart LR
 - RabbitMQ 使用 publisher confirm、mandatory returns、手动 Ack 和 TTL 重试队列；
 - 单条消息最多处理 3 次，达到上限进入死信记录和死信队列，不进行无限重试；
 - traceId 通过 message header 传递，并在死信记录中保留；
-- WebSocket 使用 STOMP `CONNECT` 帧中的 Bearer Token 认证，服务端从认证 Principal 推导用户目的地；
+- 正式浏览器 WebSocket 使用同源 HttpOnly Cookie 完成握手，STOMP `CONNECT` 不携带 JWT；兼容客户端仍可使用 Bearer CONNECT，服务端始终从已验证 Principal 推导用户目的地；
 - 通知写入事务提交后才进行 WebSocket 推送，推送失败不回滚通知或任务状态；
 - WebSocket 只负责实时体验，断线后通过 HTTP 从 `notification` 补拉。

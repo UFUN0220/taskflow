@@ -8,6 +8,7 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import yvon.backend.auth.AuthTokenResolver;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -18,11 +19,17 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
 
     private final NotificationWebSocketProperties properties;
     private final NotificationWebSocketChannelInterceptor channelInterceptor;
+    private final AuthTokenResolver tokenResolver;
+    private final NotificationWebSocketHandshakeHandler handshakeHandler;
 
     public NotificationWebSocketConfiguration(NotificationWebSocketProperties properties,
-                                               NotificationWebSocketChannelInterceptor channelInterceptor) {
+                                               NotificationWebSocketChannelInterceptor channelInterceptor,
+                                               AuthTokenResolver tokenResolver,
+                                               NotificationWebSocketHandshakeHandler handshakeHandler) {
         this.properties = properties;
         this.channelInterceptor = channelInterceptor;
+        this.tokenResolver = tokenResolver;
+        this.handshakeHandler = handshakeHandler;
     }
 
     @Override
@@ -34,6 +41,8 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint(properties.getEndpoint())
+                .addInterceptors(new CookieAuthenticationHandshakeInterceptor(tokenResolver))
+                .setHandshakeHandler(handshakeHandler)
                 .setAllowedOriginPatterns(properties.getAllowedOrigins().toArray(String[]::new));
     }
 
@@ -41,4 +50,5 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(channelInterceptor);
     }
+
 }

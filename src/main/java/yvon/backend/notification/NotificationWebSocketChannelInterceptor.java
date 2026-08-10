@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import yvon.backend.auth.JwtTokenService;
 import yvon.backend.auth.AuthSessionService;
 import yvon.backend.auth.UserPrincipal;
+import yvon.backend.auth.AuthTokenResolver;
 
 import java.util.List;
 import java.security.Principal;
@@ -88,10 +89,9 @@ public class NotificationWebSocketChannelInterceptor implements ChannelIntercept
 
     private UsernamePasswordAuthenticationToken authenticate(StompHeaderAccessor accessor) {
         String authorization = firstHeader(accessor, "Authorization");
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("WebSocket连接缺少认证信息");
-        }
-        String token = authorization.substring("Bearer ".length()).trim();
+        String token = authorization != null && authorization.startsWith("Bearer ")
+                ? authorization.substring("Bearer ".length()).trim()
+                : cookieToken(accessor);
         if (token.isBlank()) {
             throw new IllegalArgumentException("WebSocket连接缺少认证信息");
         }
@@ -115,6 +115,13 @@ public class NotificationWebSocketChannelInterceptor implements ChannelIntercept
         } catch (JwtException | IllegalArgumentException | AuthenticationException exception) {
             throw new IllegalArgumentException("WebSocket认证失败", exception);
         }
+    }
+
+    private String cookieToken(StompHeaderAccessor accessor) {
+        Map<String, Object> attributes = accessor.getSessionAttributes();
+        if (attributes == null) return "";
+        Object token = attributes.get(AuthTokenResolver.WEBSOCKET_COOKIE_TOKEN_ATTRIBUTE);
+        return token instanceof String value ? value : "";
     }
 
     private String firstHeader(StompHeaderAccessor accessor, String name) {

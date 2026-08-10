@@ -1,7 +1,7 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Card, Form, Input, Typography, message } from 'antd'
 import { useState } from 'react'
-import { login, setAccessToken } from '../api'
+import { login, markBrowserAuthenticated } from '../api'
 
 type Props = { onLoggedIn: () => void }
 
@@ -10,8 +10,8 @@ export default function LoginPage({ onLoggedIn }: Props) {
   const submit = async (values: { login: string; password: string }) => {
     setLoading(true)
     try {
-      const result = await login(values.login, values.password)
-      setAccessToken(result.accessToken)
+      await login(values.login, values.password)
+      markBrowserAuthenticated()
       message.success('登录成功')
       onLoggedIn()
     } catch (error) {
