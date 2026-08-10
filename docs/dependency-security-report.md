@@ -2,6 +2,12 @@
 
 本报告只记录本轮实际执行结果。`target/` 已被 Git 忽略；最终源码对应的原始 OWASP 报告副本为 `target/phase11-owasp-final.json` 和 `target/phase11-owasp-final.xml`。报告中的 CVE 命中是 Dependency-Check 的 CPE/NVD 最佳努力结果，hosted suppressions 下载失败时不能直接当作已确认可利用漏洞，也不能当作零漏洞。
 
+## Stage 11.5B：精确治理当前状态（2026-08-11）
+
+已冻结 `BEFORE_STAGE_11_5B` 基线：OSV 21 个受影响 Maven package、70 条漏洞（7 critical、27 high、27 medium、9 low），官方 SARIF artifact 为 `9070998290`。已完成 P0/P1/P2 初步归因，并区分 runtime 与 test scope；可复核清单见[依赖漏洞精确治理记录](dependency-vulnerability-remediation-2026-08-11.md)。
+
+本轮仅提交 Spring Boot parent `3.4.8`→`3.5.16` 的 BOM 小批候选，没有手工覆盖 Spring Framework、Spring Security、Tomcat、Jackson 或 Netty，也没有添加 suppression。由于当前本地 Windows runner 的 PowerShell 子进程持续返回 `CreateProcessAsUserW: 5 (拒绝访问)`，本提交后的 Maven、OSV、Testcontainers、前端和 E2E 尚未执行；因此本阶段暂记 `IN_PROGRESS_PENDING_LOCAL_REGRESSION`，评分保持 85/100，不能宣称漏洞已解决，也不能开始 Stage 13。
+
 ## 阶段 12.3：确定性扫描收口（历史状态，已由阶段 12.4 重新定位）
 
 当前状态：`SCAN_INFRA_NOT_CLOSED`。本阶段只改进扫描运行条件和结果分类，不修改 Stage12 reliability 测试、不升级依赖、不添加 suppression。

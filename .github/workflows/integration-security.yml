@@ -31,6 +31,13 @@ jobs:
       - name: Run unit and Testcontainers integration tests with coverage gate
         run: bash ./mvnw -Dtaskflow.integration=true verify
 
+      - name: Capture resolved dependency tree for Stage 11.5B-R
+        if: always()
+        run: |
+          mkdir -p target/stage11-5b
+          bash ./mvnw -DskipTests -Dverbose dependency:tree \
+            > target/stage11-5b/dependency-tree-stage11-5b.txt
+
       - name: Set up Node.js
         if: always()
         uses: actions/setup-node@v5
@@ -181,6 +188,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             target/site/jacoco/**
+            target/stage11-5b/**
             target/dependency-check-report.*
             ${{ runner.temp }}/npm-audit.json
             ${{ runner.temp }}/npm-audit.stderr

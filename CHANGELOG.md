@@ -1,5 +1,7 @@
 # Changelog
 
+- Stage 11.5B（2026-08-11）：冻结 OSV 70 条漏洞基线并完成 Maven 运行时/测试作用域归因；确认 Spring Boot 3.4.8 没有可复核的更高 3.4.x patch 后，仅提交 3.4.8→3.5.16 parent/BOM 小批候选。未手工覆盖 Spring Framework、Security、Tomcat、Jackson 或 Netty；本批次等待本地与远程完整回归，评分保持 85/100，未开始 Stage 13。
+
 - 阶段 12.4：停止依赖不可满足的 `NVD_API_KEY` CI 前置；保留 OWASP `security-scan` 作为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，新增 Google 官方 OSV-Scanner v2.5.0 reusable workflow 作为 Maven/npm 主依赖漏洞门禁。首次远程扫描发现 21 个 Maven package、70 个漏洞并正确阻断，SARIF 已上传；建立 OWASP/OSV artifact 归因文档。当前评分保持 85/100，未开始阶段 13。
 
 - 阶段 12.2：远程 GitHub Actions 已确认 Stage12 Testcontainers 4/4（整体 Maven 84/0/0）通过；fast-check 通过，npm audit 为 0 vulnerabilities。OWASP 因无 NVD API key 长时间下载后 runner shutdown 被取消，依赖安全门禁仍未闭环，评分保持 85/100。
