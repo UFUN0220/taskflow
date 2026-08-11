@@ -4,11 +4,13 @@
 
 ## Stage 11.5B：精确治理当前状态（2026-08-11）
 
+当前状态：`COMPLETED`。浏览器门禁由 Stage 11.5B-E2E-F 独立完成，详见[浏览器报告](e2e-browser-report-2026-08-11-stage11-5b.md)。
+
 已冻结 `BEFORE_STAGE_11_5B` 基线：OSV 21 个受影响 Maven package、70 条漏洞（7 critical、27 high、27 medium、9 low），官方 SARIF artifact 为 `9070998290`。已完成 P0/P1/P2 初步归因，并区分 runtime 与 test scope；可复核清单见[依赖漏洞精确治理记录](dependency-vulnerability-remediation-2026-08-11.md)。
 
 本轮先提交 Spring Boot parent `3.4.8`→`3.5.16` 的 BOM 小批候选；当时本地 Windows runner 的 PowerShell 子进程持续返回 `CreateProcessAsUserW: 5 (拒绝访问)`，所以先记为待远程验证。随后 Batch B 的远程回归已完成；浏览器 E2E 仍待 acceptance 凭据注入，不能开始 Stage 13。
 
-Batch B 已完成精确版本约束并在远程 run `31415397055` 通过 Maven/Testcontainers、JaCoCo、npm audit 和 OSV：84 tests、Stage12 4/4、npm 0 vulnerabilities，OSV After 为 0 affected / 0 vulnerabilities（SARIF artifact `9073216554`）。实际解析版本和 Before/After 计数见[Stage 11.5B remediation](dependency-vulnerability-remediation-2026-08-11.md)。升级后浏览器 direct/proxy E2E 尚未执行，原因是本地未注入 acceptance 凭据；因此 Stage 11.5B 仍为 `PARTIAL_PENDING_BROWSER_E2E`，评分保持 85/100。
+Batch B 已完成精确版本约束并在远程 run `31415397055` 通过 Maven/Testcontainers、JaCoCo、npm audit 和 OSV：84 tests、Stage12 4/4、npm 0 vulnerabilities，OSV After 为 0 affected / 0 vulnerabilities（SARIF artifact `9073216554`）。实际解析版本和 Before/After 计数见[Stage 11.5B remediation](dependency-vulnerability-remediation-2026-08-11.md)。升级后的浏览器历史首轮失败与后续稳定门禁已区分记录；当前 Stage 11.5B 为 `COMPLETED`，评分保持 85/100。
 
 ## 阶段 12.3：确定性扫描收口（历史状态，已由阶段 12.4 重新定位）
 
@@ -63,7 +65,7 @@ Batch B 已完成精确版本约束并在远程 run `31415397055` 通过 Maven/T
 
 ## Stage 11.5B-E2E：升级后浏览器回归（2026-08-11）
 
-本地 acceptance-only 随机凭据已通过进程环境变量注入，未写入仓库。当前提交重新打包并构建镜像后，acceptance health、HttpOnly Cookie/CSRF、登录、`/api/auth/me`、任务列表、logout 和旧会话 401 全部通过。真实 Chromium 结果：direct `8/9` 后 `9/9`；Nginx proxy `8/9` 后 `9/9`。两次首轮失败均为业务 STOMP MESSAGE 偶发未到达，虽然 `CONNECTED`、`SUBSCRIBE`、`SUBSCRIPTION_READY` 和数据库通知事实已存在；失败 trace/screenshot/video 保留，详细报告见 [`e2e-browser-report-2026-08-11-stage11-5b.md`](e2e-browser-report-2026-08-11-stage11-5b.md)。因此不把本次依赖升级后的浏览器回归写成稳定 9/9，评分保持 85/100，Stage 13 不启动。
+本地 acceptance-only 随机凭据已通过进程环境变量注入，未写入仓库。上段为 E2E-F 前的历史快照：direct/proxy 均曾出现 `8/9 → 9/9`。随后 Stage 11.5B-E2E-F 以真实 Chromium 完成 direct/proxy 定向通知各 `10/10`、完整 E2E 各连续 `2×9/9`，详情见 [`e2e-browser-report-2026-08-11-stage11-5b.md`](e2e-browser-report-2026-08-11-stage11-5b.md)。评分保持 85/100，Stage 13 本轮不启动。
 
 ## 1. 治理前后摘要
 

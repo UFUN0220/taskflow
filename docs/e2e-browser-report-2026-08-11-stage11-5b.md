@@ -2,14 +2,14 @@
 
 ## 结论
 
-本次回归使用提交 `1bc86f349966fe7f9a5ccfc36d295927a4127514` 的当前源码、重新打包的 Spring Boot 3.5.16 后端和真实 Chromium。acceptance Compose 健康与 Cookie/CSRF smoke 通过，但浏览器通知场景出现可重复的偶发性：首轮未收到业务 STOMP `MESSAGE`，随后同环境第二轮通过。
+本报告保留了升级后首轮 `8/9 → 9/9` 的历史证据，并补充 Stage 11.5B-E2E-F 的定向诊断和稳定性门禁。新的 acceptance-only 诊断在真实 Chromium 中关联了持久化、user destination dispatch、client outbound channel、浏览器 MESSAGE 和 UI 应用五个检查点。
 
 因此本批次保持：
 
-- `Stage 11.5B = PARTIAL_PENDING_BROWSER_E2E`
-- Candidate = `PARTIAL_PENDING`
+- `Stage 11.5B = COMPLETED`
+- Candidate = `COMPLETED`
 - 评分保持 `85/100`
-- Stage 13 不允许开始
+- Stage 13 已满足前置条件，但本轮按要求不启动
 
 ## 安全变量边界
 
@@ -39,7 +39,7 @@ TASKFLOW_E2E_DIRECT_WS_PORT
 
 ## Acceptance 健康证据
 
-通过 `scripts/acceptance-up.ps1` 和 `scripts/acceptance-check.ps1` 验证：
+通过隔离 acceptance Compose 环境、容器健康检查和真实 Chromium 浏览器 smoke 验证：
 
 - MySQL、Redis、RabbitMQ、MinIO healthy；
 - 后端 healthy，Flyway 新库迁移到 V8；
@@ -49,7 +49,7 @@ TASKFLOW_E2E_DIRECT_WS_PORT
 - CSRF bootstrap 和 logout 成功；
 - logout 后旧会话返回 401。
 
-为兼容当前 Windows PowerShell，`acceptance-check.ps1` 改为通过异常响应解析 4xx/5xx，不再使用当前 shell 不支持的 `-SkipHttpErrorCheck`。
+`scripts/acceptance-check.ps1` 已修复 HTTP 4xx 响应读取兼容性，并在 Windows PowerShell 5.1 与 PowerShell 7.x 下分别通过：health、登录、Cookie/CSRF、任务列表、logout 及旧会话 401。预期旧会话 401 被标记为 `EXPECTED_HTTP_FAILURE`，其他未预期 4xx 仍会阻断脚本。
 
 ## 浏览器结果
 
@@ -103,6 +103,54 @@ SUBSCRIPTION_READY MESSAGE
 
 ## 未关闭项
 
-1. direct/proxy 均未取得连续两轮 9/9，故不具备 11.5B 最终关闭证据。
-2. 需要继续定位并补充业务通知的可靠 push/replay 或可观测确认语义；不能用重复执行或无限 retry 把偶发失败包装成稳定通过。
-3. Stage 13 保持未开始。
+1. 本地 Docker Compose 单节点仍不等于生产级 WebSocket HA、跨实例广播或 broker 高可用。
+2. WebSocket 仍是 best-effort push；通知事实由 MySQL/REST 补拉承载，不能宣称 WebSocket 自身提供持久投递保证。
+3. 评分尚未因本阶段自动上调，需后续独立验收时重新评分。
+
+## Flake Root Cause Analysis
+
+### 复现与分类
+
+历史升级后回归中，direct 和 proxy 各有首轮 `8/9`、第二轮 `9/9`；失败均为同一通知场景。Stage 11.5B-E2E-F 使用同一 acceptance 数据边界和真实 Chromium 完成：
+
+| 路径 | 定向通知 | 完整 9 场景 Run 1 | 完整 9 场景 Run 2 |
+|---|---:|---:|---:|
+| Backend direct | 10/10 | 9/9 | 9/9 |
+| Nginx `/ws` proxy | 10/10 | 9/9 | 9/9 |
+
+未修改正式通知发送语义，也没有重复触发同一业务事件、固定 sleep、无限 retry 或弱化 MESSAGE 断言。定向测试在 READY 后只触发一次业务事件，按精确 `notificationId` 等待浏览器 MESSAGE，并为每次新建浏览器 context/WebSocket。
+
+综合证据分类为：`TEST_OBSERVATION_RACE / SERVER_LOSS_NOT_REPRODUCED`。原失败更符合“未按精确通知事实关联并观察完整时序”的测试观测竞态；没有捕获到 C1/C2 存在而 C3 缺失的服务器投递失败样本，因此不能把问题归因于 Nginx、Principal、user destination 或 broker 丢消息。这个结论不包装成生产可靠投递结论。
+
+### 单条 correlation 证据
+
+代表性代理路径样本 `notificationId=23`（值仅为本地 acceptance 数据）：
+
+| Checkpoint | 实际证据 |
+|---|---|
+| C1 PERSISTED | `notificationId=23`、`sourceMessageId=task:23:1`，MySQL 事实已提交 |
+| C2 DISPATCH_REQUESTED | `/queue/notifications`；`sessionCount=1`；订阅 `/user/queue/notifications`；线程为 Rabbit listener |
+| C3 BROKER_OUTBOUND | 真实 `clientOutboundChannel` 观察到同一 `notificationId=23`；目标已解析为 `/queue/notifications-user<session>`；有真实 WebSocket `sessionId` |
+| C4 BROWSER_RECEIVED | Chromium raw WebSocket frame 收到同一 `notificationId=23`，时间 `2026-08-11T06:00:28.350Z` |
+| C5 UI_APPLIED | 页面显示对应任务通知，时间 `2026-08-11T06:00:28.361Z` |
+
+`stompCommand=null` 是 Spring `clientOutboundChannel` interceptor 所处的 STOMP 序列化前阶段；C3 不把日志当作网络到达证据，而是与 Chromium raw frame 的 C4 和相同 session/destination 一起构成链路证据。诊断只记录 ID、destination、session、线程和时间，不记录 JWT、Cookie、密码、Secret 或通知正文。
+
+### 实际最小改动
+
+1. 新增 acceptance profile 专用 `NotificationDeliveryDiagnostics`，记录 C1/C2/C3，并用 `SimpUserRegistry` 记录会话与订阅快照。
+2. 在 WebSocket client outbound channel 安装 acceptance-only interceptor，验证 user destination 解析和实际 outbound payload。
+3. Playwright 新增 10 次通知定向闭环，按精确 notification ID 关联 C4/C5；保留原有 9 场景和历史失败 trace。
+4. 未改依赖、数据库 schema、生产 profile、通知 REST 契约或正式 push/replay 语义。
+
+### 阶段门禁结果
+
+- Direct targeted notification: `10/10`。
+- Nginx proxy targeted notification: `10/10`。
+- Direct full E2E: `2 × 9/9`。
+- Nginx proxy full E2E: `2 × 9/9`。
+- Stage12 reliability: 远程既有证据 `4/4`。
+- OSV: 远程既有证据 `0 affected / 0 vulnerabilities`。
+- npm audit: 远程既有证据 `0 vulnerabilities`。
+
+因此 `Stage 11.5B` 从 `PARTIAL_PENDING_BROWSER_E2E` 关闭为 `COMPLETED`；总分仍保持 `85/100`，不把本地单节点 E2E 结果升级为生产 HA 或可靠消息投递结论。

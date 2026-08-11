@@ -21,15 +21,18 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
     private final NotificationWebSocketChannelInterceptor channelInterceptor;
     private final AuthTokenResolver tokenResolver;
     private final NotificationWebSocketHandshakeHandler handshakeHandler;
+    private final NotificationWebSocketDiagnosticsInterceptor diagnosticsInterceptor;
 
     public NotificationWebSocketConfiguration(NotificationWebSocketProperties properties,
                                                NotificationWebSocketChannelInterceptor channelInterceptor,
                                                AuthTokenResolver tokenResolver,
-                                               NotificationWebSocketHandshakeHandler handshakeHandler) {
+                                               NotificationWebSocketHandshakeHandler handshakeHandler,
+                                               org.springframework.beans.factory.ObjectProvider<NotificationWebSocketDiagnosticsInterceptor> diagnosticsProvider) {
         this.properties = properties;
         this.channelInterceptor = channelInterceptor;
         this.tokenResolver = tokenResolver;
         this.handshakeHandler = handshakeHandler;
+        this.diagnosticsInterceptor = diagnosticsProvider == null ? null : diagnosticsProvider.getIfAvailable();
     }
 
     @Override
@@ -50,6 +53,13 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(channelInterceptor);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        if (diagnosticsInterceptor != null) {
+            registration.interceptors(diagnosticsInterceptor);
+        }
     }
 
 }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -28,17 +29,20 @@ public class NotificationService {
     private final NotificationMapper notificationMapper;
     private final JdbcTemplate jdbcTemplate;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationDeliveryDiagnostics diagnostics;
 
     public NotificationService(NotificationMapper notificationMapper, JdbcTemplate jdbcTemplate) {
-        this(notificationMapper, jdbcTemplate, null);
+        this(notificationMapper, jdbcTemplate, null, null);
     }
 
     @Autowired
     public NotificationService(NotificationMapper notificationMapper, JdbcTemplate jdbcTemplate,
-                               ApplicationEventPublisher eventPublisher) {
+                               ApplicationEventPublisher eventPublisher,
+                               ObjectProvider<NotificationDeliveryDiagnostics> diagnosticsProvider) {
         this.notificationMapper = notificationMapper;
         this.jdbcTemplate = jdbcTemplate;
         this.eventPublisher = eventPublisher;
+        this.diagnostics = diagnosticsProvider == null ? null : diagnosticsProvider.getIfAvailable();
     }
 
     @Transactional
@@ -130,8 +134,14 @@ public class NotificationService {
             notification.setContent(content);
             notification.setAggregateType("TASK");
             notification.setAggregateId(taskId);
-            if (notificationMapper.insertIdempotent(notification) > 0 && eventPublisher != null) {
-                eventPublisher.publishEvent(new NotificationCreatedEvent(userId, NotificationResponse.from(notification)));
+            if (notificationMapper.insertIdempotent(notification) > 0) {
+                NotificationResponse response = NotificationResponse.from(notification);
+                if (diagnostics != null) {
+                    diagnostics.persisted(response, userId);
+                }
+                if (eventPublisher != null) {
+                    eventPublisher.publishEvent(new NotificationCreatedEvent(userId, response));
+                }
             }
         }
     }

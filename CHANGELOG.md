@@ -353,3 +353,4 @@
 - 增加 Cookie、CSRF、Bearer 优先级、生产 Secure 属性和 Cookie WebSocket 会话测试；完整后端回归 75/0/1，阶段9 acceptance Cookie/CSRF smoke 通过。
 - 正式 React 不再将 JWT 写入或读取 `localStorage`；Playwright 登录、401、403 和任务真实写链路通过，重复提交与后续通知场景仍保留失败证据，未宣称完整 E2E 通过。
 - Stage 11.5B-E2E（2026-08-11）：使用重新打包的 Spring Boot 3.5.16 acceptance 镜像完成健康、Cookie/CSRF 和真实 Chromium 回归；direct `8/9 → 9/9`、Nginx proxy `8/9 → 9/9`。两条路径首轮均出现通知已落库但业务 STOMP MESSAGE 未到达的偶发证据，保留 trace/screenshot/video，Stage 11.5B 继续为 `PARTIAL_PENDING_BROWSER_E2E`，评分保持 85/100，Stage 13 未开始。
+- Stage 11.5B-E2E-F（2026-08-11）：新增 acceptance-only 通知 C1-C3 diagnostics 与真实 client outbound channel 观测；Playwright 定向通知 direct/proxy 均 10/10，完整浏览器 E2E direct/proxy 均连续 2×9/9。原 `8/9 → 9/9` 偶发记录保留为历史证据，当前按 `TEST_OBSERVATION_RACE / SERVER_LOSS_NOT_REPRODUCED` 关闭 Stage 11.5B，评分暂保持 85/100，未启动 Stage 13。

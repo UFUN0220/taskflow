@@ -4,11 +4,11 @@
 
 本报告是对阶段 0 至阶段 19 的一次独立复核，重点检查的不只是“代码是否存在”，还包括：需求覆盖、架构边界、数据一致性、外部依赖、运行恢复、安全风险、测试证据、部署证据和文档可信度。本版增加参考 PriceSight 项目采用的项目级加权评分，但评分不替代生产发布门禁。
 
-最终结论（阶段 11 依赖与 CI 门禁复验后）：
+最终结论（阶段 11.5B-E2E-F 增量复验后）：
 
 > **阶段 11 复验后项目级评分建议：85/100。结论：本地工程基线有条件通过，可用于学习、演示和面试；生产交付仍不通过。**
 
-阶段 9 已完成浏览器认证 Token 存储安全化：正式 React 不再读写 JWT `localStorage`，浏览器使用 HttpOnly Cookie + CSRF，WebSocket 同源握手复用 Cookie；Bearer 仅作为兼容客户端模式保留。阶段 10 的后端直连路径完成真实 Chromium `3 × 9/9`，包含真实 STOMP `MESSAGE` 到通知中心、断线重连和 HTTP 未读补拉；阶段 11 在全新 acceptance Compose 复验时发现前端 Nginx `/ws` 代理路径仅能看到 CONNECTED、未收到 MESSAGE，该代理路径实际为 6/9，不能与直连 9/9 合并。该边界修正了浏览器证据表述，不改变生产 HA、Ingress/TLS 或跨实例广播结论。
+阶段 9 已完成浏览器认证 Token 存储安全化：正式 React 不再读写 JWT `localStorage`，浏览器使用 HttpOnly Cookie + CSRF，WebSocket 同源握手复用 Cookie；Bearer 仅作为兼容客户端模式保留。阶段 10 的后端直连路径完成真实 Chromium `3 × 9/9`，包含真实 STOMP `MESSAGE` 到通知中心、断线重连和 HTTP 未读补拉；阶段 11.5B-E2E-F 在同一类隔离 acceptance Compose 中补充 C1-C5 诊断，direct/proxy 定向通知均 `10/10`，完整 E2E 均连续 `2 × 9/9`。历史 `8/9 → 9/9` 和代理 `6/9` 记录仍保留在阶段文档中，不改变生产 HA、Ingress/TLS 或跨实例广播结论。
 
 主要原因不是基础功能无法运行；本轮已完成认证、Compose、Kind 应用层、性能基线和部分基础设施故障恢复的本地证据，但仍有以下重要边界：
 
@@ -44,7 +44,7 @@
 | 架构与可解释性 | 15% | 86 | 12.90 | 模块化单体边界清晰，MySQL/Redis/MQ/MinIO 职责明确，状态机、乐观锁、幂等和补偿可解释；生产拓扑仍是本地学习架构 |
 | 安全与数据保护 | 15% | 78 | 11.70 | 新增并实测 HttpOnly Cookie、SameSite、prod Secure、CSRF 缺失/正确 Header、登出清 Cookie、Cookie/Redis 会话和同源 WebSocket Cookie；npm 官方 audit 已清零，但 Maven/OWASP 仍报告 79 high、25 critical，Bearer 兼容旁路、外部 Secret 轮换、真实 Ingress 代理隔离和生产证书链仍未完成 |
 | 测试、构建与回归 | 15% | 90 | 13.50 | Maven 默认 75/0/1，显式 Testcontainers verify 75/0/0，JaCoCo 门禁通过，前端 typecheck/build、acceptance Compose smoke 通过；阶段 10 真实 Chromium 连续 3 次 9/9，仍未把远程 CI 运行包装为本地证据 |
-| 评估可信度与可观测性 | 15% | 86 | 12.90 | acceptance 已真实验证 Cookie/CSRF/登出会话闭环、真实 STOMP MESSAGE、UI 展示和断线补拉，并保留失败 trace/截图机制；同参数性能复测仍未执行，OWASP 结果为失败而非零漏洞 |
+| 评估可信度与可观测性 | 15% | 86 | 12.90 | acceptance 已真实验证 Cookie/CSRF/登出会话闭环、direct/proxy 真实 STOMP MESSAGE、UI 展示和断线补拉；本阶段新增 acceptance-only C1-C5 诊断并保留失败 trace/截图机制；同参数性能复测仍未执行，OWASP 结果为失败而非零漏洞 |
 | 运行集成与恢复就绪度 | 15% | 85 | 12.75 | Compose 六服务健康、保卷重启和真实浏览器 WebSocket 断线/重连/补拉均有证据，Kind overlay rollout 与 backend Pod 恢复通过；Ingress Controller、跨实例广播和中间件 HA 仍未验证 |
 | 工程治理 | 5% | 68 | 3.40 | 已有 fast-check/integration-security 两层 CI、JaCoCo 门禁；阶段 11 增加 npm/OWASP 最终 fail-closed gate，且 npm 已清零，但 OWASP 本地扫描仍 exit 1，远程 integration-security 为 `NOT_REMOTE_VERIFIED`，actionlint 为 `NOT_EXECUTED`，完整分支保护仍未验证 |
 | 文档与交付可信度 | 5% | 96 | 4.80 | README、CHANGELOG、阶段文档、阶段 10 浏览器报告、最终摘要、中文面试材料和本报告已同步，明确区分本地证据与生产边界 |
@@ -54,27 +54,36 @@
 
 机器可读评分见 [`docs/project-acceptance-score-2026-08-09.json`](project-acceptance-score-2026-08-09.json)。
 
+## Stage 11.5B Final Evidence
+
+- Security：OSV 从 `70 vulnerabilities` 收敛到 `0 affected / 0 vulnerabilities`；npm audit 为 0；OWASP/NVD 保留为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，不包装为零漏洞。
+- Backend：Maven `test` 为 85/0/0、5 项跳过；显式 integration `verify` 为 85/0/0、0 项跳过；Stage12/Stage14 Testcontainers 和 JaCoCo 通过。
+- Browser：direct targeted `10/10`、Nginx targeted `10/10`；direct 完整 E2E `2 × 9/9`；Nginx 完整 E2E `2 × 9/9`。
+- Notification：已留存 C1 持久化、C2 user-destination dispatch、C3 client outbound channel、C4 Chromium MESSAGE、C5 UI 应用证据；语义仍是 MySQL durable fact + best-effort WebSocket push + REST recovery。
+- Acceptance script：`scripts/acceptance-check.ps1` 已在 Windows PowerShell 5.1 和 PowerShell 7.x 通过 health、登录、`/api/auth/me`、任务列表、logout 和旧会话 401；预期 401 不被误判为脚本失败。
+- CI：最终 fast-check、integration-security、OSV run ID 与冻结 commit SHA 在本阶段推送后记录于最终交付回执；本报告不把旧 head 的通过结果冒充为最终 head 证据。
+
 ## 3. 本轮可复现的验证证据
 
 ### 3.1 构建与回归测试
 
 | 命令 | 结果 |
 | --- | --- |
-| `.\mvnw.cmd test` | 通过：69 项执行，失败 0，跳过 1 |
+| `.\mvnw.cmd test` | 通过：85 项执行，失败 0，错误 0，跳过 5 |
 | `frontend\npm run build` | 通过：TypeScript 检查和 Vite 构建通过 |
 | `docker compose config --quiet` | 无 `.env` 时按必填 Secret fail-fast；使用仅存在于当前进程的非敏感测试值解析通过 |
 | `kubectl kustomize k8s` | 通过 |
 | `kubectl kustomize k8s\overlays\kind-production-like` | 通过：prod profile、health 管理面、TLS 路由和不覆盖 Secret 的边界可渲染 |
-| `.\mvnw.cmd '-Dtaskflow.integration=true' verify` | 通过：JaCoCo HTML/XML 生成，覆盖率门禁通过；最终总行覆盖率 47.70%，核心类门槛 45% |
-| `Testcontainers` 集成结果 | 上述显式 verify 共 69 项执行，失败 0，跳过 0；完成 8 条 Flyway 迁移 |
+| `.\mvnw.cmd '-Dtaskflow.integration=true' verify` | 通过：85 项执行，失败 0，错误 0，跳过 0；JaCoCo HTML/XML 生成，覆盖率门禁通过 |
+| `Testcontainers` 集成结果 | 上述显式 verify 的集成门禁通过；Stage12 4/4、Stage14 通过，完成 Flyway 迁移 |
 | `docker compose -f docker-compose.acceptance.yml config --quiet` | 通过：使用仅存在于当前进程的非敏感占位值解析；无变量时按设计 fail-fast |
-| `scripts/acceptance-check.ps1` | 通过：health、管理员登录、`/api/auth/me`、任务列表、登出、旧会话 401 |
+| `scripts/acceptance-check.ps1` | 通过：Windows PowerShell 5.1 与 PowerShell 7.x 均验证 health、管理员登录、`/api/auth/me`、任务列表、登出、旧会话 401 |
 | `python tools/performance/performance_harness.py prepare --departments 1 --users 1 --tasks 1` | 通过：使用同一 acceptance 管理员/测试用户变量，生成 `docs/performance-acceptance-prepare-2026-08-09.json`；未输出密码或 Token |
 | `npm audit --registry=https://registry.npmjs.org --json` | 通过：moderate/high/critical 均 0；React Router 6.30.4 的 moderate advisory 已通过升级到 7.18.2 清除 |
-| `.\mvnw.cmd -Psecurity-scan -DskipTests -DautoUpdate=false verify` | 失败：报告生成但 hosted suppressions/在线数据源不完整且命中 79 high、25 critical；不计为扫描通过，原始副本见 `target/phase11-owasp-final.*` |
-| GitHub Actions YAML | 两个 workflow 可由 PyYAML 解析；最终 gate 已对扫描非零/无效报告/high/critical 阻断；远程修复后的 integration-security 为 `NOT_REMOTE_VERIFIED`，actionlint 为 `NOT_EXECUTED` |
+| `.\mvnw.cmd -Psecurity-scan -DskipTests -DautoUpdate=false verify` | 作为补充扫描：保留 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，不计为主门禁通过；OSV 主门禁为 0/0 |
+| GitHub Actions YAML | 两个 workflow 可由 PyYAML 解析；最终 gate 对扫描非零/无效报告/high/critical 阻断；最终远程 run ID 在本阶段推送后补录 |
 
-默认命令唯一跳过的是 `Stage14ContainerEnvironmentTest`。该测试默认关闭，必须显式设置 `taskflow.integration=true`；阶段 8 显式 verify 已执行 69 项、0 失败、0 跳过，并完成全新 MySQL 的 8 条 Flyway 迁移。
+默认命令跳过 5 项可选/集成测试；必须显式设置 `taskflow.integration=true` 才执行完整集成门禁；本阶段显式 verify 为 85 项、0 失败、0 跳过。
 
 阶段 4 前端构建通过，并对 Dashboard、Login、Management、Task 使用路由级懒加载。旧入口 JS 为 1,156,965 bytes，新构建最大共享 chunk 为 747,991 bytes，入口相关 chunk 下降约 35.38%；但最大 chunk 仍超过 Vite 默认 500 KB 提示阈值，且没有首屏网络抓包，因此不把它描述为总传输量或用户体验已改善。完整对比见 `docs/performance-comparison-2026-08.md`。
 
@@ -97,9 +106,9 @@
 
 ### 3.5 浏览器 E2E
 
-阶段 3 新增 Playwright 9 个浏览器场景。阶段 10 的后端直连路径在隔离 acceptance Compose 和统一环境变量下连续三次结果均为 **9 通过、0 失败**；阶段 11 重新经过前端 Nginx `/ws` 代理验证为 6/9，CONNECT 可见但 MESSAGE 未到达，因此最终报告保留“直连 9/9、代理 6/9”的分层证据。真实 WebSocket 场景要求收到包含本次任务编号的 `MESSAGE`，并在通知中心显示该编号；完整矩阵见 [`docs/e2e-browser-report-2026-08-10.md`](e2e-browser-report-2026-08-10.md)。
+阶段 3 新增 Playwright 9 个浏览器场景。阶段 11.5B-E2E-F 在隔离 acceptance Compose 和统一环境变量下，使用真实 Chromium 完成 direct/proxy 定向通知各 **10/10**，并完成完整 E2E 各连续 **2 × 9/9**；真实 WebSocket 场景要求收到包含本次任务编号的 `MESSAGE`，并在通知中心显示该编号。历史首轮 `8/9`、代理 `6/9` 作为失败证据保留，完整矩阵见 [`docs/e2e-browser-report-2026-08-11-stage11-5b.md`](e2e-browser-report-2026-08-11-stage11-5b.md)。
 
-本阶段已修正登录完成等待、Modal 提交定位、测试编号规范化、通知内容断言，并完成 STOMP Principal/userId 对齐和后端回归测试。阶段 10 真实浏览器证据已闭环；失败时的截图、视频和 trace 机制仍保留在 `frontend/test-results/`，最终结果和边界见 [`docs/e2e-browser-report-2026-08-10.md`](e2e-browser-report-2026-08-10.md)。
+本阶段已修正登录完成等待、Modal 提交定位、测试编号规范化、通知内容断言，并完成 STOMP Principal/userId 对齐和后端回归测试。阶段 10 真实浏览器证据已闭环；阶段 11.5B-E2E-F 进一步完成 direct/proxy 稳定性门禁，并保留失败时的截图、视频和 trace 机制。最终结果和边界见 [`docs/e2e-browser-report-2026-08-11-stage11-5b.md`](e2e-browser-report-2026-08-11-stage11-5b.md)。
 
 ### 3.2 Compose 运行态
 
@@ -164,9 +173,9 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 | 8 | 评论、附件元数据、MinIO 对象和失败补偿具备 | 通过当前范围，未包含病毒扫描 |
 | 9 | 持久提醒计划、Redis 索引、锁和恢复路径具备 | Redis 短故障恢复实测；真实到期提醒重建未在本阶段等待验证 |
 | 10 | RabbitMQ 手动 Ack、有限重试、死信和通知幂等具备 | RabbitMQ 容器恢复实测；真实消息 retry/DLQ/replay 未完成 |
-| 11 | STOMP 用户目的地、断线清理和通知补拉具备 | 后端直连路径的 Cookie 握手、Principal/userId 对齐、真实 Chromium MESSAGE、通知 UI、断线重连和 HTTP 补拉通过；Nginx `/ws` 代理路径未收到 MESSAGE；Bearer 仅为兼容客户端 |
+| 11 | STOMP 用户目的地、断线清理和通知补拉具备 | direct/proxy Cookie 握手、Principal/userId 对齐、真实 Chromium MESSAGE、通知 UI、断线重连和 HTTP 补拉通过；Bearer 仅为兼容客户端；本地单节点不等于可靠投递或 HA |
 | 12 | 审计、Trace、敏感值排除和健康探针具备 | 通过当前范围 |
-| 13 | React 核心页面、401 处理、重复提交保护和通知中心具备 | 后端直连 acceptance Chromium E2E 连续 3 次 9/9，包含真实通知 UI 和断线补拉；代理路径仍未闭环 |
+| 13 | React 核心页面、401 处理、重复提交保护和通知中心具备 | acceptance Chromium direct/proxy 定向通知各 10/10，完整 E2E 各连续 2 × 9/9，包含真实通知 UI 和断线补拉；历史失败 trace 保留 |
 | 14 | 回归测试体系、Testcontainers 和 Playwright 入口具备 | 后端回归、Testcontainers、前端构建和真实 Chromium E2E 均有通过证据；远程 CI 仍需单独复验 |
 | 15 | 性能数据准备、六个 HTTP 场景、EXPLAIN 和运行时观测 | 原固定参数基线通过；阶段 8 acceptance 数据准备通过，同参数优化后完整复测未执行，生产容量未验证 |
 | 16 | 六服务 Compose、健康检查、持久卷和重启恢复具备 | Redis/RabbitMQ/MinIO 短恢复实测；MySQL 本阶段未复验，既有保卷重启证据保留 |
@@ -211,7 +220,7 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 | P0 | MySQL、Redis、RabbitMQ、MinIO 仍为单实例 | 无法满足生产故障域和数据服务高可用 | 明确目标 HA 拓扑，完成备份/恢复、故障切换和消息积压演练 |
 | P1 | 只有窗口限流，尚无账号锁定/验证码升级 | 公开部署仍需更强的密码猜测防护 | 保留按账号和来源限流，同时补充锁定、验证码升级、审计和生产策略 |
 | P1 | OWASP 扫描失败且输出 79 high、25 critical；npm moderate 已清零 | 当前 Maven 依赖风险不能作为生产门禁通过 | 按报告逐项核实并升级 Spring/Netty/Tomcat 等运行时依赖，修复数据源后重新扫描；不得用 suppression 掩盖真实 CVE |
-| P1 | 前端 Nginx `/ws` 代理路径未收到 STOMP MESSAGE | 直连后端 9/9 不能代表浏览器经代理闭环 | 修复并重复验证 Nginx Upgrade/Connection/路径及浏览器通知链，保留 3 次稳定证据 |
+| P1（本阶段已关闭） | 历史 direct/proxy 首轮通知 MESSAGE 偶发观测失败 | 早期 `8/9` 或代理 `6/9` 不能直接区分测试观测竞态与服务器丢失 | 已用 acceptance-only C1-C5 诊断和精确 notificationId 关联验证：direct/proxy 定向各 10/10，完整各连续 2 × 9/9；仍不宣称生产级可靠投递 |
 | P2 | 前端最大共享 chunk 仍偏大、优化后压测未复测、Rabbit/数据库故障闭环证据不完整 | 首屏、性能变化、Rabbit retry/DLQ/replay 和数据库事实快照仍未闭环量化 | 完成同参数性能对比、Rabbit retry/DLQ/replay、数据库事实快照和更完整故障恢复证据 |
 
 ## 7. 交付判定
@@ -220,14 +229,14 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 | --- | --- | --- |
 | 本地学习与功能演示 | **通过当前范围** | Compose 六服务健康与保卷重启通过，health/401/非法凭据烟测通过，Kind 应用层 rollout/Pod 恢复通过；阶段 6 既有本地 HTTPS/WSS 传输证据保留 |
 | 面试项目与中文材料 | **通过当前范围** | 阶段 19 材料已按本报告证据更新，明确个人贡献和未验证边界 |
-| 本地工程基线 | **有条件通过，85/100** | Cookie/CSRF、无 localStorage 浏览器登录、后端直连 Chromium 3×9/9、STOMP MESSAGE、断线补拉有证据；Nginx `/ws` 代理为 6/9，同参数性能、依赖风险和生产 HA 仍未闭环 |
+| 本地工程基线 | **有条件通过，85/100** | Cookie/CSRF、无 localStorage 浏览器登录、direct/proxy Chromium 定向通知各 10/10、完整 E2E 各 2×9/9、STOMP MESSAGE、断线补拉有证据；同参数性能、依赖风险和生产 HA 仍未闭环 |
 | 生产发布 | **不通过** | 外部 Secret/TLS 轮换、Token、真实 Ingress/代理、单实例中间件、依赖告警治理、目标环境容量和完整 E2E 尚未满足门禁 |
 
 ### 可以对外描述的事实
 
 - 这是一个可在本地 Compose 环境启动的 Java 17 + React 模块化单体任务协同平台。
 - 已实现任务、项目、权限、数据范围、附件、提醒、RabbitMQ 通知、WebSocket 通知中心、审计和本地部署等完整学习链路。
-- 阶段 11 最终回归为 Maven 77 项执行、0 失败、1 项可选测试跳过，显式 integration verify 为 77/0/0；npm audit、前端 typecheck/build、acceptance 六服务健康、Cookie smoke 均有新证据。阶段 10 后端直连 Chromium 连续三次执行 9/9，阶段 11 前端 Nginx `/ws` 代理实测为 6/9；同参数性能复测仍未完成，不能描述为生产容量或生产 HA 已验证。
+- 本阶段最终本地回归为 Maven `test` 85/0/0、5 项跳过；显式 `-Dtaskflow.integration=true verify` 为 85/0/0、0 项跳过，JaCoCo 与 Stage12/Stage14 集成门禁通过；前端 typecheck/build 通过。真实 Chromium direct/proxy 定向通知各 10/10，完整 E2E 各连续 2×9/9；同参数性能复测仍未完成，不能描述为生产容量或生产 HA 已验证。
 - 任务状态机、乐观锁、消息幂等、有限重试、死信补偿和 MinIO 元数据分离是项目中可以重点讲解的工程设计。
 
 ### 当前不能对外描述的事实
@@ -237,7 +246,7 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 - 可以引用 `docs/performance-baseline.json` 中的本机实测结果，但不能将其外推为生产 QPS、延迟或容量。
 - 不能把本地 Compose 单实例中间件描述为生产级高可用。
 - 可以说官方 npm audit 当前 moderate/high/critical 为 0；不能说 Maven/npm/OWASP 依赖零漏洞，OWASP 本轮仍因数据源边界和 high/critical 命中失败。
-- 可以说后端直连 acceptance 环境的 Chromium STOMP 9/9 有证据；不能把当前 Nginx `/ws` 代理路径的 6/9 或直连结果描述成代理链路、生产 WSS 或生产可靠通知。
+- 可以说 acceptance Compose 中 direct/proxy 均有真实 Chromium STOMP MESSAGE 和 E2E 证据；不能把这些本地单节点结果描述成生产 WSS、跨实例广播或生产可靠通知。
 - 可以说阶段 6 既有本地 TLS/WSS Upgrade 101 证据；不能把 WSS 握手描述为完整 STOMP 鉴权、订阅、通知可靠性或生产 Ingress 验收。
 
 ## 8. 下一步建议
@@ -245,7 +254,7 @@ Kustomize 静态渲染和 Kind 实机验证均通过。当前集群为 `dev`、c
 建议按以下顺序推进，而不是继续增加外围功能：
 
 1. 优先关闭 P0：Secret 管理、Token 存储策略、真实 TLS/WSS/Ingress 和中间件高可用。
-2. 优先治理 OWASP high/critical 告警并修复 Nginx `/ws` 代理实链，再运行完整依赖扫描和回归；npm moderate 已清零。
-3. 完成代理路径连续 3 次 9/9 E2E、同参数性能复测及 Rabbit/DLQ/数据库事实快照。
+2. 优先治理 OWASP high/critical 告警，并修复 `acceptance-check.ps1` 在当前 PowerShell 下处理 4xx 的兼容性，再运行完整依赖扫描和回归；npm moderate 已清零。
+3. 完成同参数性能复测及 Rabbit/DLQ/数据库事实快照；实时 WebSocket 仍保持 best-effort + REST 补拉的事实边界。
 
 本报告不替代各阶段技术文档；它是当前项目是否适合演示、面试或继续生产化推进的总判断入口。

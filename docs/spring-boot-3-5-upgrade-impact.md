@@ -41,7 +41,7 @@ Spring Boot 3.5.16 的 Maven/Testcontainers 兼容性门已通过。实际解析
 
 ## Batch B 浏览器回归补充（2026-08-11）
 
-当前提交重新打包和 acceptance 镜像构建成功，Maven/Testcontainers/OSV 证据没有出现确定性兼容回归。浏览器 direct 与 Nginx proxy 均能完成 Cookie 登录、任务写链路、409 防冲突、断线补拉和附件场景；但两条路径首轮都曾出现同一偶发问题：通知记录已持久化、`SUBSCRIPTION_READY` 已收到，业务 `MESSAGE` 未在条件窗口到达，下一轮才通过。该结果不能归因于 Nginx rewrite 或 Principal 丢失，也不能把 9/9 偶发通过写成稳定证据；Stage 11.5B 保持 `PARTIAL_PENDING_BROWSER_E2E`。
+当前提交重新打包和 acceptance 镜像构建成功，Maven/Testcontainers/OSV 证据没有出现确定性兼容回归。浏览器 direct 与 Nginx proxy 的历史首轮偶发记录保留；Stage 11.5B-E2E-F 已用 acceptance-only C1-C3 诊断定位到真实 client outbound channel，并完成 direct/proxy 定向通知各 10/10、完整 E2E 各连续 2×9/9。该问题不归因于 Nginx rewrite、Principal 丢失或 Spring Boot 3.5.16；当前 Stage 11.5B 已完成，详见浏览器报告。
 
 参考：
 
