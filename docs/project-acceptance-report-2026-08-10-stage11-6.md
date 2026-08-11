@@ -17,6 +17,22 @@
 - Nginx 配置：容器内 `nginx -T` 已确认 WebSocket location 实际加载 `proxy_buffering off`、长连接 timeout 和 forwarded header 配置；
 - worker 409：fixture 使用 worker 进程隔离并限制任务编号长度，修复后四次完整运行没有 409。
 
+## 阶段 12 正式验收增补
+
+PR #1 的远程 integration-security job `93444588147` 在包含提交 `4681da9e94352e09fb3337a484ec556e5533d3fd` 的 merge ref 上执行 `bash ./mvnw -Dtaskflow.integration=true verify`，结果为 84 tests，0 failures，0 errors，0 skipped，BUILD SUCCESS。Stage12 四个 testcase 的真实能力映射与故障注入边界见 [阶段 12 故障注入验收](fault-injection-acceptance-2026-08-10.md)。
+
+该 job 后续 OWASP 步骤因未提供 NVD API key，下载 NVD 数据至 48% 时收到 runner shutdown，退出码 143，job 为 `cancelled`；这是扫描基础设施/运行时中断，不是确认的 CVE gate 结果。npm audit 远程报告为 0 vulnerabilities，OWASP 不计为通过，`integration-security` 整体仍不是 PASS。
+
+本次只增加 Stage12 的远程可靠性证据，不机械上调评分；总分继续保持 85/100，生产发布结论继续不通过。
+
+## 阶段 12.4：替代依赖安全门禁
+
+阶段 12.4 停止依赖或申请 `NVD_API_KEY`。OWASP Maven `security-scan` profile 保留为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，本地历史报告仍记录真实高危/严重候选，不能写成 OWASP PASS。
+
+Google 官方 OSV-Scanner `v2.5.0` 已作为同一 workflow 的主依赖漏洞门禁真实执行：解析 `pom.xml` 27 packages、`frontend/package-lock.json` 220 packages；发现 21 个 Maven package、70 个漏洞（7 Critical、27 High、27 Medium、9 Low），SARIF artifact `9070667075` 已上传并进入 Code Scanning。OSV reporter 因漏洞发现失败，分类为 `VULNERABILITY_GATE_FAILURE`，不是扫描基础设施失败。
+
+本次 integration-security 的 Maven/Testcontainers、覆盖率、npm audit、npm gate 和 OWASP supplemental 均通过；OSV 主门禁按设计阻断 workflow。该结果证明主门禁可执行，但不代表依赖治理完成；评分继续保持 85/100，OSV findings 进入依赖归因与后续小批治理，未在本阶段升级依赖，也未开始阶段 13。
+
 ## 根因与边界
 
 根因是前端在 CONNECTED 后过早将连接视为可用，Nginx 转发时序放大了 SUBSCRIBE 尚未真正处理完成的竞态；不是通过 anonymous SUBSCRIBE、放宽权限、伪造 userId 或移除 Cookie 认证解决。backend direct 低延迟时掩盖了该问题。

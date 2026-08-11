@@ -2,6 +2,71 @@
 
 本报告只记录本轮实际执行结果。`target/` 已被 Git 忽略；最终源码对应的原始 OWASP 报告副本为 `target/phase11-owasp-final.json` 和 `target/phase11-owasp-final.xml`。报告中的 CVE 命中是 Dependency-Check 的 CPE/NVD 最佳努力结果，hosted suppressions 下载失败时不能直接当作已确认可利用漏洞，也不能当作零漏洞。
 
+## Stage 11.5B：精确治理当前状态（2026-08-11）
+
+当前状态：`COMPLETED`。浏览器门禁由 Stage 11.5B-E2E-F 独立完成，详见[浏览器报告](e2e-browser-report-2026-08-11-stage11-5b.md)。
+
+已冻结 `BEFORE_STAGE_11_5B` 基线：OSV 21 个受影响 Maven package、70 条漏洞（7 critical、27 high、27 medium、9 low），官方 SARIF artifact 为 `9070998290`。已完成 P0/P1/P2 初步归因，并区分 runtime 与 test scope；可复核清单见[依赖漏洞精确治理记录](dependency-vulnerability-remediation-2026-08-11.md)。
+
+本轮先提交 Spring Boot parent `3.4.8`→`3.5.16` 的 BOM 小批候选；当时本地 Windows runner 的 PowerShell 子进程持续返回 `CreateProcessAsUserW: 5 (拒绝访问)`，所以先记为待远程验证。随后 Batch B 的远程回归已完成；浏览器 E2E 仍待 acceptance 凭据注入，不能开始 Stage 13。
+
+Batch B 已完成精确版本约束并在远程 run `31415397055` 通过 Maven/Testcontainers、JaCoCo、npm audit 和 OSV：84 tests、Stage12 4/4、npm 0 vulnerabilities，OSV After 为 0 affected / 0 vulnerabilities（SARIF artifact `9073216554`）。实际解析版本和 Before/After 计数见[Stage 11.5B remediation](dependency-vulnerability-remediation-2026-08-11.md)。升级后的浏览器历史首轮失败与后续稳定门禁已区分记录；当前 Stage 11.5B 为 `COMPLETED`，评分保持 85/100。
+
+## 阶段 12.3：确定性扫描收口（历史状态，已由阶段 12.4 重新定位）
+
+当前状态：`SCAN_INFRA_NOT_CLOSED`。本阶段只改进扫描运行条件和结果分类，不修改 Stage12 reliability 测试、不升级依赖、不添加 suppression。
+
+### 已确认的前一轮根因
+
+远程 run `31385404134` / job `93444588147` 从 11:52:15Z 开始，OWASP 步骤 11:54:05Z 开始。在未配置 NVD API key 的情况下，日志显示 NVD 数据集 374,572 条，下载到 180,000 条（48%）时接近 job 的 `timeout-minutes: 30`，随后 runner 收到 shutdown signal，Maven exit 143；没有出现 NVD 403/429、OOM、hosted suppression 异常或真实 CVSS gate 输出。job conclusion 为 `cancelled`，因此最终分类为 `JOB_TIMEOUT_DURING_NVD_INITIALIZATION`，不是 `VULNERABILITY_GATE_FAILURE`。
+
+### 本阶段配置
+
+- `pom.xml` 改用 `<nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>`，让 Dependency-Check 从环境变量读取 API key，不把 Secret 展开到 Maven 参数；仓库不保存 key。
+- `integration-security` job timeout 调整为 60 分钟，避免把 Java/Testcontainers、npm 和冷启动 NVD 更新共同挤在 30 分钟内。
+- 使用 `actions/cache/restore@v5` 与 `actions/cache/save@v5` 缓存 `${{ runner.temp }}/dependency-check-data`。key 为 `${{ runner.os }}-dependency-check-v12.1-data`，包含 runner OS 与 Dependency-Check major/minor 版本，restore key 允许同版本持续更新，不绑定业务 `pom.xml` 全量 hash。
+- workflow 只输出 `NVD_API_KEY configured: true/false`，同时记录 cache hit、开始/结束时间、exit code、分类和扫描日志；不输出 Secret。
+- 分类固定为 `SCAN_PASS`、`VULNERABILITY_GATE_FAILURE` 或 `SCAN_INFRA_FAILURE`。前两类都继续阻断 gate；没有报告或报告解析不出 CVSS 高危证据时，不得伪装成漏洞失败。
+- 缺少 `NVD_API_KEY` 时，扫描步骤快速写入 `SCAN_INFRA_FAILURE` 和 exit code 78，再由统一 gate 阻断；不会继续执行一个不可控的未认证 NVD 冷启动。
+- 正常完成、漏洞失败或可控基础设施失败时，artifact 都尝试上传报告、日志、exit/classification/cache/key-status 文件；硬 runner shutdown 仍可能在上传前终止整个 job，这是本轮已观测到的限制。
+
+### 本地验证
+
+```powershell
+.\mvnw.cmd '-Psecurity-scan' '-DskipTests' '-DautoUpdate=false' `
+  '-Ddependency-check.data.directory=F:\newinstall\maven-repository\org\owasp\dependency-check-data\11.0' verify
+```
+
+结果：报告 HTML/JSON/XML/SARIF 等完整生成，Maven exit 1；报告和 Maven 输出均存在 CVSS >= 7 命中，分类为 `VULNERABILITY_GATE_FAILURE`。这证明新的 API key 参数没有破坏插件执行，但不代表远程 NVD cache miss/hit 已验证。
+
+### 远程验证记录
+
+本次 workflow 修改推送后必须分别记录：
+
+| Run | Cache | NVD_API_KEY | Update/scan duration | Reports | Classification |
+|---|---|---|---|---|---|
+| 第一轮（run `31394054175` / job `93472490228`） | miss；日志为 `Cache not found` | `NOT_SET`（仓库 Secret 列表为空） | OWASP 13:42:20Z–14:45:12Z；约 62 分钟后 runner shutdown | 无，cache/gate/upload 被取消跳过 | `SCAN_INFRA_FAILURE`；进程实际 exit 143，硬取消导致分类文件未能落盘 |
+| 第二轮（run `31400580061` / job `93494241832`） | miss；日志为 `Cache not found` | `NOT_SET`（仓库 Secret 列表仍为空） | 13:55:22Z–13:55:23Z；缺 key 后约 1 秒快速失败 | 已上传 artifact `9067520875`（744,805 bytes） | `SCAN_INFRA_FAILURE`；exit 78，统一 gate 失败 |
+| 真正热缓存验证轮 | 未执行；先决条件是配置 `NVD_API_KEY` 并完成一轮冷启动 | 待配置后记录 SET/NOT_SET | 待执行 | 待执行 | 待执行 |
+
+远程日志同时确认：NVD 374,922 条记录从 13:43:06Z 开始下载，14:44:02Z 到 80,000（21%），14:45:12Z 收到 shutdown signal 并 exit 143；没有 403/429、OOM 或 CVSS gate 输出。因此第一轮不是漏洞门禁失败，而是无 API Key 冷启动被 runner 超时取消。第二轮证明缺少 key 时会快速、可观测地阻断并上传 artifact，但不产生 NVD 报告，也不等同于 cache-hit。当前 GitHub 仓库未配置 `NVD_API_KEY`，无法安全伪造热缓存证据。配置 Secret 后，应先触发一轮允许完成并保存 cache 的冷启动，再触发真正热缓存轮确认 `cache-hit=true`。
+
+在两轮远程结果完成前，项目验收报告中的“OWASP 未完成”事实保持不变，评分继续保持 85/100；本阶段当前为外部 Secret 配置阻塞，不能进入阶段 13。
+
+## 阶段 12.4：NVD 不可达条件下的替代门禁（当前状态）
+
+本阶段不再申请、获取或依赖 `NVD_API_KEY`，也不把 NVD 冷缓存问题无限阻塞主 CI。OWASP Maven `security-scan` profile 保留，但在 GitHub Actions 中定位为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`；只有恢复受信任本地数据缓存时才允许以 `-DautoUpdate=false` 做 supplemental scan。
+
+主依赖漏洞门禁改为 Google 官方 OSV-Scanner reusable workflow `v2.5.0`，递归扫描仓库中的 `pom.xml` 与 `frontend/package-lock.json`，漏洞发现和扫描基础设施失败都必须阻断该 job，并上传 SARIF/官方扫描结果。Maven 传递依赖默认走 deps.dev 解析；OSV 当前不覆盖 Maven test scope，故 Testcontainers/Maven 回归继续独立保留。
+
+第一次真实远程 OSV run 已完成：run `31408614816` / job `93520987366`，OSV-Scanner `v2.5.0`；`pom.xml` 发现 27 packages，`frontend/package-lock.json` 发现 220 packages，过滤 15 个本地/不可扫描包；21 个 Maven package 受影响、70 个漏洞（7 Critical、27 High、27 Medium、9 Low、0 Unknown）；SARIF artifact `9070667075` 已上传并进入 Code Scanning。scanner 完成但 reporter 因漏洞发现失败，job 为 `VULNERABILITY_GATE_FAILURE`，不是 `OSV_SCAN_INFRA_FAILURE`。若未来 OSV 官方数据源不可达，必须分类为 `OSV_SCAN_INFRA_FAILURE`，不得写成无漏洞。
+
+本阶段不会修改依赖版本、添加 suppression 或降低 CVSS 门槛；OWASP 与 OSV 的 artifact-level 对照见[依赖漏洞归因与双扫描器对照](dependency-vulnerability-triage-2026-08-10.md)。评分继续保持 85/100，阶段 13 不启动。
+
+## Stage 11.5B-E2E：升级后浏览器回归（2026-08-11）
+
+本地 acceptance-only 随机凭据已通过进程环境变量注入，未写入仓库。上段为 E2E-F 前的历史快照：direct/proxy 均曾出现 `8/9 → 9/9`。随后 Stage 11.5B-E2E-F 以真实 Chromium 完成 direct/proxy 定向通知各 `10/10`、完整 E2E 各连续 `2×9/9`，详情见 [`e2e-browser-report-2026-08-11-stage11-5b.md`](e2e-browser-report-2026-08-11-stage11-5b.md)。评分保持 85/100，Stage 13 本轮不启动。
+
 ## 1. 治理前后摘要
 
 | 检查 | 治理前 | 治理后 | 结论 |

@@ -4,6 +4,7 @@ type ApiEnvelope<T> = { code: string | number; message?: string; data: T }
 type Session = { token: string; userId: number }
 type UserSummary = { userId: number; version: number; status: string }
 type TaskSummary = { taskId: number; taskNo: string; title: string; status: string; version: number }
+type NotificationSummary = { notificationId: number; sourceMessageId: string; content: string }
 
 const adminUsername = process.env.TASKFLOW_ACCEPTANCE_ADMIN_USERNAME
 const adminPassword = process.env.TASKFLOW_ACCEPTANCE_ADMIN_PASSWORD
@@ -177,6 +178,7 @@ test('浏览器真实收到 STOMP 通知消息', async ({ page }) => {
   await installWebSocketTracker(page, process.env.TASKFLOW_E2E_DIRECT_WS === 'true')
   await loginUi(page, adminUsername, adminPassword!)
   await openNotificationCenter(page)
+  await waitForNotificationSubscription(page)
   const taskNo = `${taskPrefix}_WS`
   const title = e2eTitle('E2E WebSocket Task')
   const task = await createTask(adminSession.token, taskNo, title)
@@ -207,6 +209,7 @@ test('WebSocket 断线重连后通过 HTTP 补拉恢复通知', async ({ page })
   await installWebSocketTracker(page)
   await loginUi(page, adminUsername, adminPassword!)
   await openNotificationCenter(page)
+  await waitForNotificationSubscription(page)
   await page.evaluate(() => {
     const sockets = (window as unknown as { __taskflowSockets?: WebSocket[] }).__taskflowSockets ?? []
     sockets[sockets.length - 1]?.close()
@@ -236,6 +239,64 @@ test('附件上传正向链路', async ({ page }) => {
   })
   await expect(page.getByText('e2e-proof.txt')).toBeVisible({ timeout: 15_000 })
 })
+
+for (let iteration = 1; iteration <= 10; iteration += 1) {
+  test(`通知定向闭环第 ${iteration} 次：READY 后单次业务事件收到真实 MESSAGE`, async ({ page }, testInfo) => {
+    const browserMessages: string[] = []
+    page.on('websocket', (websocket) => {
+      websocket.on('framereceived', (data) => {
+        const frame = data.payload
+        browserMessages.push(typeof frame === 'string' ? frame : `BINARY:${frame.toString('utf8')}`)
+      })
+    })
+    await installWebSocketTracker(page, process.env.TASKFLOW_E2E_DIRECT_WS === 'true')
+    await loginUi(page, adminUsername, adminPassword!)
+    await openNotificationCenter(page)
+    await waitForNotificationSubscription(page)
+    const taskNo = `${taskPrefix}_TARGET_${iteration}`
+    const task = await createTask(adminSession.token, taskNo, e2eTitle(`E2E Target ${iteration}`))
+    await submitTask(adminSession.token, task.taskId, task.version)
+
+    const notification = await findNotificationForTask(taskNo)
+    let browserReceivedAt: string | undefined
+    await expect.poll(async () => {
+      const message = await page.evaluate((notificationId) => {
+        const state = window as unknown as { __taskflowWsMessages?: string[] }
+        return (state.__taskflowWsMessages ?? []).find((frame) =>
+          frame.startsWith('MESSAGE\n') && frame.includes(`"notificationId":${notificationId}`))
+      }, notification.notificationId)
+      if (!message) {
+        throw new Error(`No browser MESSAGE for notificationId=${notification.notificationId}; frames=${JSON.stringify(browserMessages)}`)
+      }
+      browserReceivedAt = new Date().toISOString()
+      return message
+    }, { timeout: 15_000 }).toBeTruthy()
+
+    await expect(page.getByText(taskNo, { exact: false })).toBeVisible({ timeout: 10_000 })
+    const uiAppliedAt = new Date().toISOString()
+    const diagnostics = await page.request.get(`/api/acceptance/notification-diagnostics/${notification.notificationId}`)
+    const diagnosticsBody = diagnostics.ok() ? await diagnostics.json() : { status: diagnostics.status() }
+    console.log(JSON.stringify({
+      mode: process.env.TASKFLOW_E2E_DIRECT_WS === 'true' ? 'direct' : 'proxy',
+      iteration,
+      notificationId: notification.notificationId,
+      browserReceivedAt,
+      uiAppliedAt,
+      diagnostics: diagnosticsBody,
+    }))
+    await testInfo.attach('notification-delivery-trace.json', {
+      body: Buffer.from(JSON.stringify({
+        mode: process.env.TASKFLOW_E2E_DIRECT_WS === 'true' ? 'direct' : 'proxy',
+        iteration,
+        notificationId: notification.notificationId,
+        browserReceivedAt,
+        uiAppliedAt,
+        diagnostics: diagnosticsBody,
+      }, null, 2)),
+      contentType: 'application/json',
+    })
+  })
+}
 
 async function loginApi(username: string, password: string): Promise<Session> {
   const response = await api.post('/api/auth/login', { data: { login: username, password } })
@@ -283,6 +344,16 @@ async function findTask(title: string) {
   return task
 }
 
+async function findNotificationForTask(taskNo: string): Promise<NotificationSummary> {
+  const response = await api.get('/api/notifications?page=1&size=100&status=UNREAD', {
+    headers: authHeader(adminSession.token),
+  })
+  const body = await readApi<{ records: NotificationSummary[] }>(response)
+  const notification = body.records.find((item) => item.content.includes(taskNo))
+  if (!notification) throw new Error(`Notification for task ${taskNo} not found`)
+  return notification
+}
+
 async function createTaskThroughUi(page: Page, taskNo: string, title: string) {
   await page.goto('/tasks')
   await page.getByRole('button', { name: '创建任务' }).click()
@@ -318,7 +389,16 @@ async function openNotificationCenter(page: Page) {
   }
 }
 
+async function waitForNotificationSubscription(page: Page) {
+  await expect.poll(async () => page.evaluate(() => {
+    const state = window as unknown as { __taskflowWsMessages?: string[] }
+    return (state.__taskflowWsMessages ?? []).some((frame) =>
+      frame.startsWith('MESSAGE\n') && frame.includes('SUBSCRIPTION_READY'))
+  }), { timeout: 10_000 }).toBe(true)
+}
+
 async function installWebSocketTracker(page: Page, directBackend = false) {
+  const directBackendPort = process.env.TASKFLOW_E2E_DIRECT_WS_PORT ?? '28080'
   await page.addInitScript((useDirectBackend) => {
     const NativeWebSocket = window.WebSocket
     const sockets: WebSocket[] = []
@@ -329,7 +409,7 @@ async function installWebSocketTracker(page: Page, directBackend = false) {
       constructor(url: string | URL, protocols?: string | string[]) {
         const actualUrl = useDirectBackend ? (() => {
           const directUrl = new URL(String(url))
-          directUrl.port = '28080'
+          directUrl.port = (window as unknown as { __taskflowDirectWsPort?: string }).__taskflowDirectWsPort ?? '28080'
           return directUrl.toString()
         })() : url
         super(actualUrl, protocols)
@@ -371,6 +451,11 @@ async function installWebSocketTracker(page: Page, directBackend = false) {
     ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[]; __taskflowWsSentFrames: string[] }).__taskflowWsStates = states
     ;(window as unknown as { __taskflowSockets: WebSocket[]; __taskflowWsMessages: string[]; __taskflowWsStates: string[]; __taskflowWsSentFrames: string[] }).__taskflowWsSentFrames = sentFrames
   }, directBackend)
+  if (directBackend) {
+    await page.addInitScript((port) => {
+      ;(window as unknown as { __taskflowDirectWsPort?: string }).__taskflowDirectWsPort = port
+    }, directBackendPort)
+  }
 }
 
 async function readApi<T>(response: { ok(): boolean; status(): number; json(): Promise<unknown> }): Promise<T> {

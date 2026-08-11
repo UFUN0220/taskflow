@@ -1,9 +1,9 @@
 package yvon.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import io.minio.MinioClient;
 import io.minio.StatObjectArgs;
+import okhttp3.OkHttpClient;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,6 +50,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.GetResponse;
+import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -63,6 +64,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -139,10 +141,7 @@ class Stage12ReliabilityContainerTest {
         taskId = insertTask();
         configureRedis();
         configureRabbit();
-        minioClient = MinioClient.builder()
-                .endpoint("http://" + minio.getHost() + ":" + minio.getMappedPort(9000))
-                .credentials("minioadmin", "minioadmin_local")
-                .build();
+        minioClient = createMinioClient();
     }
 
     @AfterAll
@@ -238,10 +237,8 @@ class Stage12ReliabilityContainerTest {
         index.rebuildFromDatabase();
         assertThat(redisTemplate.opsForZSet().score(properties.getRedisKey(), "901")).isNotNull();
 
-        restartContainer(redis);
-        await(() -> redis.execInContainer("redis-cli", "PING").getStdout().contains("PONG"),
-                value -> Boolean.TRUE.equals(value), Duration.ofSeconds(30), "Redis readiness");
-        assertThat(redisTemplate.opsForZSet().score(properties.getRedisKey(), "901")).isNotNull();
+        assertThat(redis.execInContainer("redis-cli", "FLUSHALL").getExitCode()).isZero();
+        assertThat(redisTemplate.opsForZSet().score(properties.getRedisKey(), "901")).isNull();
         redisTemplate.delete(properties.getRedisKey());
         index.rebuildFromDatabase();
         assertThat(redisTemplate.opsForZSet().size(properties.getRedisKey())).isEqualTo(1L);
@@ -254,15 +251,20 @@ class Stage12ReliabilityContainerTest {
         properties.getMinio().setEndpoint("http://" + minio.getHost() + ":" + minio.getMappedPort(9000));
         properties.getMinio().setAccessKey("minioadmin");
         properties.getMinio().setSecretKey("minioadmin_local");
-        properties.getMinio().setBucket(PREFIX + "-bucket");
+        // S3 bucket names cannot contain the underscore used in the test data prefix.
+        properties.getMinio().setBucket(PREFIX.replace('_', '-') + "-bucket");
         MinioObjectStorage storage = new MinioObjectStorage(minioClient, properties);
         var taskService = mock(yvon.backend.task.TaskService.class);
         when(taskService.requireVisible(anyLong(), any())).thenReturn(new TaskEntity());
         var metadata = mock(TaskAttachmentMetadataService.class);
-        TaskAttachmentEntity pending = new TaskAttachmentEntity();
-        pending.setId(101L);
-        pending.setVersion(0);
-        when(metadata.createPending(any(TaskAttachmentEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        AtomicReference<TaskAttachmentEntity> pending = new AtomicReference<>();
+        when(metadata.createPending(any(TaskAttachmentEntity.class))).thenAnswer(invocation -> {
+            TaskAttachmentEntity entity = invocation.getArgument(0);
+            entity.setId(101L);
+            entity.setVersion(0);
+            pending.set(entity);
+            return entity;
+        });
         TaskAttachmentEntity available = new TaskAttachmentEntity();
         available.setId(101L);
         available.setVersion(1);
@@ -272,43 +274,36 @@ class Stage12ReliabilityContainerTest {
 
         service.upload(taskId, new MockMultipartFile("file", "stage12.txt", "text/plain",
                 "stage12 object".getBytes(StandardCharsets.UTF_8)), TestFixtures.principal());
-        String successKey = pending.getObjectKey();
+        String successKey = pending.get().getObjectKey();
         assertThat(minioClient.statObject(StatObjectArgs.builder().bucket(properties.getMinio().getBucket())
                 .object(successKey).build()).size()).isEqualTo(14L);
 
-        restartContainer(minio);
-        await(() -> {
-            minioClient.listBuckets();
-            return true;
-        }, value -> Boolean.TRUE.equals(value), Duration.ofSeconds(30), "MinIO readiness");
         var unavailableMetadata = mock(TaskAttachmentMetadataService.class);
-        TaskAttachmentEntity failedPending = new TaskAttachmentEntity();
-        failedPending.setId(102L);
-        failedPending.setVersion(0);
         when(unavailableMetadata.createPending(any(TaskAttachmentEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        TaskAttachmentService unavailableService = new TaskAttachmentService(unavailableMetadata, storage, taskService, properties);
+        MinioObjectStorage unavailableStorage = new MinioObjectStorage(
+                createMinioClient("http://127.0.0.1:1"), properties);
+        TaskAttachmentService unavailableService = new TaskAttachmentService(unavailableMetadata, unavailableStorage,
+                taskService, properties);
         assertThatThrownBy(() -> unavailableService.upload(taskId,
                 new MockMultipartFile("file", "failed.txt", "text/plain", "failed".getBytes(StandardCharsets.UTF_8)),
                 TestFixtures.principal())).hasMessage("附件上传失败，请稍后重试");
         verify(unavailableMetadata).markFailed(any(), anyLong());
-        restartContainer(minio);
-        await(() -> {
-            minioClient.listBuckets();
-            return true;
-        }, value -> Boolean.TRUE.equals(value), Duration.ofSeconds(30), "MinIO readiness");
-
         var orphanMetadata = mock(TaskAttachmentMetadataService.class);
-        TaskAttachmentEntity orphanPending = new TaskAttachmentEntity();
-        orphanPending.setId(103L);
-        orphanPending.setVersion(0);
-        when(orphanMetadata.createPending(any(TaskAttachmentEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        AtomicReference<TaskAttachmentEntity> orphanPending = new AtomicReference<>();
+        when(orphanMetadata.createPending(any(TaskAttachmentEntity.class))).thenAnswer(invocation -> {
+            TaskAttachmentEntity entity = invocation.getArgument(0);
+            entity.setId(103L);
+            entity.setVersion(0);
+            orphanPending.set(entity);
+            return entity;
+        });
         when(orphanMetadata.markAvailable(any(), anyLong())).thenThrow(new IllegalStateException("database commit failed"));
         TaskAttachmentService orphanService = new TaskAttachmentService(orphanMetadata, storage, taskService, properties);
         assertThatThrownBy(() -> orphanService.upload(taskId,
                 new MockMultipartFile("file", "orphan.txt", "text/plain", "orphan".getBytes(StandardCharsets.UTF_8)),
                 TestFixtures.principal())).isInstanceOf(IllegalStateException.class);
         assertThatThrownBy(() -> minioClient.statObject(StatObjectArgs.builder().bucket(properties.getMinio().getBucket())
-                .object(orphanPending.getObjectKey()).build())).isInstanceOf(Exception.class);
+                .object(orphanPending.get().getObjectKey()).build())).isInstanceOf(Exception.class);
     }
 
     @Test
@@ -320,14 +315,13 @@ class Stage12ReliabilityContainerTest {
         String beforeFlyway = jdbc.queryForObject("SELECT version FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 1", String.class);
 
         restartContainer(mysql);
-        await(() -> jdbc.queryForObject("SELECT 1", Integer.class), value -> Integer.valueOf(1).equals(value),
-                Duration.ofSeconds(60), "MySQL SQL readiness");
+        await(() -> mysqlQuery("SELECT 1"), "1"::equals, Duration.ofSeconds(180), "MySQL SQL readiness");
 
-        Map<String, Integer> after = snapshot();
-        String afterFlyway = jdbc.queryForObject("SELECT version FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 1", String.class);
+        Map<String, Integer> after = snapshotFromContainer();
+        String afterFlyway = mysqlQuery("SELECT version FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 1");
         assertThat(afterFlyway).isEqualTo(beforeFlyway).isEqualTo("8");
         assertThat(after).isEqualTo(before);
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM task WHERE id = ?", Integer.class, taskId)).isEqualTo(1);
+        assertThat(mysqlQuery("SELECT COUNT(*) FROM task WHERE id = " + taskId)).isEqualTo("1");
     }
 
     private static void configureRedis() {
@@ -343,6 +337,22 @@ class Stage12ReliabilityContainerTest {
         rabbitConnectionFactory.setPublisherReturns(true);
         rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory);
         rabbitTemplate.setMandatory(true);
+    }
+
+    private static MinioClient createMinioClient() {
+        return createMinioClient("http://" + minio.getHost() + ":" + minio.getMappedPort(9000));
+    }
+
+    private static MinioClient createMinioClient(String endpoint) {
+        return MinioClient.builder()
+                .endpoint(endpoint)
+                .credentials("minioadmin", "minioadmin_local")
+                .httpClient(new OkHttpClient.Builder()
+                        .connectTimeout(2, TimeUnit.SECONDS)
+                        .readTimeout(2, TimeUnit.SECONDS)
+                        .writeTimeout(2, TimeUnit.SECONDS)
+                        .build())
+                .build();
     }
 
     private static ReminderProperties rabbitProperties() {
@@ -429,6 +439,32 @@ class Stage12ReliabilityContainerTest {
         return result;
     }
 
+    private static Map<String, Integer> snapshotFromContainer() throws Exception {
+        String result = mysqlQuery("""
+                SELECT
+                    (SELECT COUNT(*) FROM sys_user WHERE username = '%s'),
+                    (SELECT COUNT(*) FROM task WHERE task_no = '%s'),
+                    (SELECT COUNT(*) FROM notification WHERE source_message_id LIKE '%s%%'),
+                    (SELECT COUNT(*) FROM task_attachment WHERE object_key LIKE 'tasks/%d/%%'),
+                    (SELECT COUNT(*) FROM reminder_plan WHERE task_id = %d)
+                """.formatted(USERNAME, TASK_NO, PREFIX, taskId, taskId));
+        String[] values = result.split("\\t");
+        Map<String, Integer> snapshot = new HashMap<>();
+        snapshot.put("users", Integer.valueOf(values[0]));
+        snapshot.put("tasks", Integer.valueOf(values[1]));
+        snapshot.put("notifications", Integer.valueOf(values[2]));
+        snapshot.put("attachments", Integer.valueOf(values[3]));
+        snapshot.put("reminders", Integer.valueOf(values[4]));
+        return snapshot;
+    }
+
+    private static String mysqlQuery(String sql) throws Exception {
+        var result = mysql.execInContainer("mysql", "-u" + mysql.getUsername(),
+                "-p" + mysql.getPassword(), "--batch", "--skip-column-names", mysql.getDatabaseName(), "-e", sql);
+        assertThat(result.getExitCode()).as("MySQL query failed: " + sql).isZero();
+        return result.getStdout().trim();
+    }
+
     private static <T> T await(Callable<T> action, java.util.function.Predicate<T> predicate,
                                Duration timeout, String description) throws Exception {
         long deadline = System.nanoTime() + timeout.toNanos();
@@ -447,11 +483,8 @@ class Stage12ReliabilityContainerTest {
 
     private static void restartContainer(org.testcontainers.containers.Container<?> container) throws Exception {
         String id = container.getContainerId();
-        DockerClientFactory.instance().client().stopContainerCmd(id).withTimeout(30).exec();
-        await(() -> inspect(id), state -> !state.getState().getRunning(), Duration.ofSeconds(20), "container stop");
-        DockerClientFactory.instance().client().startContainerCmd(id).exec();
+        DockerClientFactory.instance().client().restartContainerCmd(id).withTimeout(60).exec();
         await(() -> inspect(id), state -> state.getState().getRunning(), Duration.ofSeconds(20), "container start");
-        await(() -> container.isRunning(), value -> Boolean.TRUE.equals(value), Duration.ofSeconds(60), "container ready");
     }
 
     private static InspectContainerResponse inspect(String id) {

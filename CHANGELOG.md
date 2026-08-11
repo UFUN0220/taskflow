@@ -1,5 +1,20 @@
 # Changelog
 
+- Stage 11.5B-R：Spring Boot 3.5.16 候选通过远程 Maven/Testcontainers、JaCoCo、npm audit 和 OSV 门禁；84 tests、Stage12 4/4，OSV 从 21/70（7 critical、27 high）降为 0/0。补充 Jackson 2.21.5、Netty 4.1.136.Final、Commons Lang3 3.18.0、BouncyCastle 1.84 的精确固定。升级后浏览器 E2E 因缺少 acceptance 凭据暂未复验，评分保持 85/100，Stage 13 未开始。
+
+- Stage 11.5B（2026-08-11）：冻结 OSV 70 条漏洞基线并完成 Maven 运行时/测试作用域归因；确认 Spring Boot 3.4.8 没有可复核的更高 3.4.x patch 后，仅提交 3.4.8→3.5.16 parent/BOM 小批候选。未手工覆盖 Spring Framework、Security、Tomcat、Jackson 或 Netty；本批次等待本地与远程完整回归，评分保持 85/100，未开始 Stage 13。
+
+- 阶段 12.4：停止依赖不可满足的 `NVD_API_KEY` CI 前置；保留 OWASP `security-scan` 作为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，新增 Google 官方 OSV-Scanner v2.5.0 reusable workflow 作为 Maven/npm 主依赖漏洞门禁。首次远程扫描发现 21 个 Maven package、70 个漏洞并正确阻断，SARIF 已上传；建立 OWASP/OSV artifact 归因文档。当前评分保持 85/100，未开始阶段 13。
+
+- 阶段 12.2：远程 GitHub Actions 已确认 Stage12 Testcontainers 4/4（整体 Maven 84/0/0）通过；fast-check 通过，npm audit 为 0 vulnerabilities。OWASP 因无 NVD API key 长时间下载后 runner shutdown 被取消，依赖安全门禁仍未闭环，评分保持 85/100。
+
+## GitHub Actions CI 修复与阶段 12 本地运行验证 - 2026-08-10
+
+- 删除 workflow job 级别无效的 `runner.temp` Maven 用户目录引用，解决 workflow 解析阶段 0 秒失败；fast-check 已真实通过。
+- 修复附件文件名在 Linux runner 上未规范化 Windows 反斜杠的问题，完整本地 Maven 回归 84 tests、0 failures、5 skipped。
+- Stage12 Testcontainers 本地真实通过 4 tests、0 failures、0 skipped：Rabbit retry/DLQ/replay/幂等、Redis 派生状态重建、MinIO 成功/失败/孤儿补偿、MySQL 同容器 restart 后 Flyway V8 与事实快照保持。
+- integration-security 的远程复验已完成 Maven/Testcontainers/JaCoCo 与 npm audit；OWASP 因 NVD 无 API key 长时间下载后 runner shutdown 被取消。此前暴露的 Maven 失败时依赖扫描输出文件不存在问题，本轮已增加 always 条件和缺失输出 fail-closed 检查。
+
 ## 2026-08-10 — 调优阶段 11.6
 
 - 修复 Nginx WebSocket/STOMP 代理路径下因订阅确认竞态导致的真实通知不稳定问题。
@@ -337,3 +352,5 @@
 - WebSocket 同源握手复用 Cookie，STOMP CONNECT 不再发送 JWT，也不把 JWT 放入 URL；Bearer STOMP 兼容模式保留。
 - 增加 Cookie、CSRF、Bearer 优先级、生产 Secure 属性和 Cookie WebSocket 会话测试；完整后端回归 75/0/1，阶段9 acceptance Cookie/CSRF smoke 通过。
 - 正式 React 不再将 JWT 写入或读取 `localStorage`；Playwright 登录、401、403 和任务真实写链路通过，重复提交与后续通知场景仍保留失败证据，未宣称完整 E2E 通过。
+- Stage 11.5B-E2E（2026-08-11）：使用重新打包的 Spring Boot 3.5.16 acceptance 镜像完成健康、Cookie/CSRF 和真实 Chromium 回归；direct `8/9 → 9/9`、Nginx proxy `8/9 → 9/9`。两条路径首轮均出现通知已落库但业务 STOMP MESSAGE 未到达的偶发证据，保留 trace/screenshot/video，Stage 11.5B 继续为 `PARTIAL_PENDING_BROWSER_E2E`，评分保持 85/100，Stage 13 未开始。
+- Stage 11.5B-E2E-F（2026-08-11）：新增 acceptance-only 通知 C1-C3 diagnostics 与真实 client outbound channel 观测；Playwright 定向通知 direct/proxy 均 10/10，完整浏览器 E2E direct/proxy 均连续 2×9/9。原 `8/9 → 9/9` 偶发记录保留为历史证据，当前按 `TEST_OBSERVATION_RACE / SERVER_LOSS_NOT_REPRODUCED` 关闭 Stage 11.5B，评分暂保持 85/100，未启动 Stage 13。
