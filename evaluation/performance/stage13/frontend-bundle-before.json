@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-08-11",
+  "stage": "13",
+  "build": "before",
+  "entry": "assets/index-DjqKrRXJ.js",
+  "assets": [
+    { "file": "index-DjqKrRXJ.js", "rawBytes": 767334, "gzipBytes": 248379 },
+    { "file": "Table-E3vCiRaZ.js", "rawBytes": 207960, "gzipBytes": 65230 },
+    { "file": "index-XWgrvak4.js", "rawBytes": 98115, "gzipBytes": 31050 },
+    { "file": "TaskPage-ITcpJHaV.js", "rawBytes": 96457, "gzipBytes": 30790 },
+    { "file": "ManagementPage.js", "rawBytes": 6546, "gzipBytes": 2348 },
+    { "file": "index.css", "rawBytes": 4073, "gzipBytes": 1576 },
+    { "file": "DashboardPage.js", "rawBytes": 3354, "gzipBytes": 1778 },
+    { "file": "LoginPage.js", "rawBytes": 2661, "gzipBytes": 1465 }
+  ],
+  "jsTotalRawBytes": 1182427,
+  "jsTotalGzipBytes": 382049,
+  "note": "Names for small hashed chunks are normalized from the baseline build log; entry and totals are the recorded build output. NotificationCenter was statically imported in this build."
+}

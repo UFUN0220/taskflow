@@ -1,5 +1,11 @@
 # Changelog
 
+- Stage 13 Final Freeze（2026-08-14）：完整 npm audit 的唯一 high 已定位为 `vite@6.4.3 → postcss@8.5.26 → nanoid@3.3.17` 间接开发依赖（advisory 1139427），通过精确 `overrides` 更新为 `nanoid@3.3.18`。`npm ci` 后完整 audit 与生产 audit 均为 0 vulnerabilities；typecheck/build、Chromium direct/proxy 9/9、后端默认回归和显式 Testcontainers verify 均完成。入口 JS 保持 583,825 B，Vite 大 chunk warning 与性能因果边界保留，评分维持 85/100。
+
+- Stage 13 容器复验补充（2026-08-14）：Docker Desktop daemon 恢复后，在 `desktop-linux` context 下真实执行 `-Dtaskflow.integration=true verify`，85 tests、0 failures、0 errors、0 skipped；Stage12 4/4、Stage14 1/1，Flyway V1-V8 与 JaCoCo 门禁通过。此前本机 daemon 未运行造成的跳过不再作为最终状态。
+
+- Stage 13（2026-08-11）：将 NotificationCenter 从 App 首屏静态依赖改为懒加载；入口 JS 从 767,334 B 降至 583,825 B，Vite 大 chunk warning 保留。按 10 部门/100 用户/1000 任务、20 并发、10 秒预热、60 秒采样完成 Before/After 各 3 轮，六场景错误率均为 0；因单机方差和前端/后端因果边界，性能结论标记 `PARTIAL_CAUSALITY`，评分保持 85/100。真实 Chromium 回归修正入口配置后 direct 9/9、Nginx proxy 9/9。完整 npm audit 暴露 Vite/PostCSS 间接开发依赖 nanoid 3.3.17 的 1 个 high；生产依赖 audit 为 0，本阶段未扩大依赖升级。2026-08-14 本机复验默认 Maven 85/0/0/5，显式 verify BUILD SUCCESS 但 Docker daemon 未运行，Testcontainers 4+1 项跳过，未计为本机容器通过。
+
 - Stage 11.5B-R：Spring Boot 3.5.16 候选通过远程 Maven/Testcontainers、JaCoCo、npm audit 和 OSV 门禁；84 tests、Stage12 4/4，OSV 从 21/70（7 critical、27 high）降为 0/0。补充 Jackson 2.21.5、Netty 4.1.136.Final、Commons Lang3 3.18.0、BouncyCastle 1.84 的精确固定。升级后浏览器 E2E 因缺少 acceptance 凭据暂未复验，评分保持 85/100，Stage 13 未开始。
 
 - Stage 11.5B（2026-08-11）：冻结 OSV 70 条漏洞基线并完成 Maven 运行时/测试作用域归因；确认 Spring Boot 3.4.8 没有可复核的更高 3.4.x patch 后，仅提交 3.4.8→3.5.16 parent/BOM 小批候选。未手工覆盖 Spring Framework、Security、Tomcat、Jackson 或 Netty；本批次等待本地与远程完整回归，评分保持 85/100，未开始 Stage 13。

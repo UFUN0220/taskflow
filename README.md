@@ -40,6 +40,8 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 2026-08-11 Stage 11.5B-E2E-F：acceptance-only C1-C5 诊断已定位通知链路；真实 Chromium direct/proxy 定向通知均 10/10，完整 E2E 均连续 2×9/9，Stage 11.5B 关闭为 COMPLETED。评分暂保持 85/100，Stage 13 本轮不启动。详见[浏览器报告](docs/e2e-browser-report-2026-08-11-stage11-5b.md)。
 
+2026-08-14 Stage 13 Final Freeze：完整 npm audit 的唯一 high 已定位为 `vite@6.4.3 → postcss@8.5.26 → nanoid@3.3.17` 间接开发依赖（advisory 1139427），通过精确 `overrides` 更新至 `nanoid@3.3.18`。`npm ci`、完整/生产 audit、typecheck、build、Chromium direct/proxy 9/9 和后端最终回归均已执行；前端入口仍为 583,825 B，Vite 大 chunk warning 保留。评分保持 85/100，生产就绪结论不变。详见[阶段13最终冻结记录](docs/performance-and-frontend-optimization-2026-08-11-stage13.md)。
+
 参考 PriceSight 项目采用的加权验收方法，本项目阶段 12.4 当前仍建议 **85/100**：本地工程基线有条件通过，可用于学习、演示和面试；生产发布不通过。npm moderate 已清零，OSV-Scanner 主门禁的第一次远程结果待验证；OWASP/NVD 仍是 supplemental 外部访问受限证据。评分未因新增扫描配置机械上调。评分明细见[结构化评分结果](docs/project-acceptance-score-2026-08-10.json)。
 
 ## 技术栈
@@ -217,6 +219,8 @@ python tools/performance/performance_harness.py prepare --output docs/performanc
 - [阶段 3 浏览器 E2E 验收记录](docs/e2e-browser-report-2026-08-09.md)
 - [阶段 15 性能工具](docs/performance.md)
 - [阶段 4 性能优化对比](docs/performance-comparison-2026-08.md)
+- [阶段 13 同参数性能复测与前端 Bundle 优化](docs/performance-and-frontend-optimization-2026-08-11-stage13.md)
+- [阶段 13 性能复测原始契约](docs/performance-benchmark-contract-2026-08-11.md)
 - [阶段 5 故障注入与恢复验收](docs/fault-injection-2026-08-09.md)
 - [阶段 12 Testcontainers 故障注入自动化验收](docs/fault-injection-acceptance-2026-08-10.md)
 - [阶段 16 Docker Compose 部署](docs/deployment.md)

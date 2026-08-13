@@ -3,12 +3,11 @@ import { Button, Layout, Menu, Space, Spin, Typography, message } from 'antd'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError, clearAccessToken, currentUser, CurrentUser, isBrowserAuthenticated, markBrowserAuthenticated, logout as serverLogout } from './api'
-import NotificationCenter from './notifications/NotificationCenter'
-
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const ManagementPage = lazy(() => import('./pages/ManagementPage'))
 const TaskPage = lazy(() => import('./pages/TaskPage'))
+const NotificationCenter = lazy(() => import('./notifications/NotificationCenter'))
 
 const { Header, Sider, Content } = Layout
 
@@ -48,5 +47,5 @@ export default function App() {
     (can('user:read') || can('role:read') || can('department:read')) && { key: '/management', icon: <SettingOutlined />, label: '组织与权限' },
   ].filter(Boolean) as { key: string; icon: JSX.Element; label: string }[]
 
-  return <Layout className="app-layout"><Sider breakpoint="lg" collapsedWidth="0"><div className="brand">TaskFlow</div><Menu theme="dark" mode="inline" selectedKeys={[location.pathname]} items={menuItems} onClick={({ key }) => navigate(key)} /></Sider><Layout><Header className="app-header"><Typography.Title level={4}>企业任务协同与流程管理平台</Typography.Title><div className="header-actions"><NotificationCenter /><Typography.Text>{user.displayName}</Typography.Text><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></div></Header><Content className="app-content"><Suspense fallback={<div className="page-loading"><Spin size="large" /></div>}><Routes><Route path="/" element={<DashboardPage canCreateProject={can('project:write')} />} /><Route path="/tasks" element={<TaskPage can={can} />} /><Route path="/management" element={<ManagementPage can={can} />} /><Route path="*" element={<DashboardPage canCreateProject={can('project:write')} />} /></Routes></Suspense></Content></Layout></Layout>
+  return <Layout className="app-layout"><Sider breakpoint="lg" collapsedWidth="0"><div className="brand">TaskFlow</div><Menu theme="dark" mode="inline" selectedKeys={[location.pathname]} items={menuItems} onClick={({ key }) => navigate(key)} /></Sider><Layout><Header className="app-header"><Typography.Title level={4}>企业任务协同与流程管理平台</Typography.Title><div className="header-actions"><Suspense fallback={null}><NotificationCenter /></Suspense><Typography.Text>{user.displayName}</Typography.Text><Button type="text" icon={<LogoutOutlined />} onClick={logout}>退出</Button></div></Header><Content className="app-content"><Suspense fallback={<div className="page-loading"><Spin size="large" /></div>}><Routes><Route path="/" element={<DashboardPage canCreateProject={can('project:write')} />} /><Route path="/tasks" element={<TaskPage can={can} />} /><Route path="/management" element={<ManagementPage can={can} />} /><Route path="*" element={<DashboardPage canCreateProject={can('project:write')} />} /></Routes></Suspense></Content></Layout></Layout>
 }
