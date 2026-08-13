@@ -38,7 +38,7 @@ The backend now includes task draft maintenance, filtered and paginated task que
 
 2026-08-11 阶段 12.4 当前结论：npm 官方 audit 为 moderate/high/critical 全部 0；OSV-Scanner v2.5.0 已真实扫描 Maven 27 packages 与 frontend 220 packages，发现 70 个 Maven 漏洞并正确阻断主门禁；Maven OWASP Dependency-Check 保留为 `SUPPLEMENTAL_NVD_REMOTE_BLOCKED`，本地报告仍有真实高危记录，不能视为依赖零漏洞。项目可在本地 Compose 和隔离 acceptance Compose 环境运行和演示；上述结果仍不等同于生产容量、生产 Ingress 或生产高可用，项目暂不判定为生产就绪。详见[依赖漏洞治理与 CI 门禁记录](docs/dependency-security-report.md)、[依赖漏洞归因](docs/dependency-vulnerability-triage-2026-08-10.md)和[项目全面验收与高维度评估报告](docs/project-acceptance-report-2026-08-09.md)。
 
-2026-08-11 Stage 11.5B-E2E-F：acceptance-only C1-C5 诊断已定位通知链路；真实 Chromium direct/proxy 定向通知均 10/10，完整 E2E 均连续 2×9/9，Stage 11.5B 关闭为 COMPLETED。评分暂保持 85/100，Stage 13 本轮不启动。详见[浏览器报告](docs/e2e-browser-report-2026-08-11-stage11-5b.md)。
+2026-08-11 Stage 11.5B-E2E-F 的 `10/10` 与 `2×9/9` 是历史证据。2026-08-14 P1 独立复验得到 direct/proxy 定向 `20/20`、完整 E2E 各 `2×19/19`；C1/C2/C3/C5/C6/C7 已验证，C4 服务器 transport 边界未建立，评分保持 83/100，P1 标记 `OPEN_WITH_DOCUMENTED_LIMIT`。详见[浏览器报告](docs/p1-nginx-stomp-proxy-stability-2026-08-14.md)。
 
 2026-08-14 Stage 13 Final Freeze：完整 npm audit 的唯一 high 已定位为 `vite@6.4.3 → postcss@8.5.26 → nanoid@3.3.17` 间接开发依赖（advisory 1139427），通过精确 `overrides` 更新至 `nanoid@3.3.18`。`npm ci`、完整/生产 audit、typecheck、build、Chromium direct/proxy 9/9 和后端最终回归均已执行；前端入口仍为 583,825 B，Vite 大 chunk warning 保留。评分保持 85/100，生产就绪结论不变。详见[阶段13最终冻结记录](docs/performance-and-frontend-optimization-2026-08-11-stage13.md)。
 

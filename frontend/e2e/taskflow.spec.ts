@@ -240,7 +240,8 @@ test('附件上传正向链路', async ({ page }) => {
   await expect(page.getByText('e2e-proof.txt')).toBeVisible({ timeout: 15_000 })
 })
 
-for (let iteration = 1; iteration <= 10; iteration += 1) {
+const targetedIterations = Number.parseInt(process.env.TASKFLOW_E2E_TARGETED_ITERATIONS ?? '10', 10)
+for (let iteration = 1; iteration <= targetedIterations; iteration += 1) {
   test(`通知定向闭环第 ${iteration} 次：READY 后单次业务事件收到真实 MESSAGE`, async ({ page }, testInfo) => {
     const browserMessages: string[] = []
     page.on('websocket', (websocket) => {
@@ -276,6 +277,13 @@ for (let iteration = 1; iteration <= 10; iteration += 1) {
     const uiAppliedAt = new Date().toISOString()
     const diagnostics = await page.request.get(`/api/acceptance/notification-diagnostics/${notification.notificationId}`)
     const diagnosticsBody = diagnostics.ok() ? await diagnostics.json() : { status: diagnostics.status() }
+    const rawMessage = browserMessages.find((frame) => frame.includes(`"notificationId":${notification.notificationId}`))
+    const stompMessage = await page.evaluate((notificationId) => {
+      const state = window as unknown as { __taskflowWsMessages?: string[] }
+      return (state.__taskflowWsMessages ?? []).find((frame) =>
+        frame.startsWith('MESSAGE\n') && frame.includes(`"notificationId":${notificationId}`))
+    }, notification.notificationId)
+    const uiApplied = await page.getByText(taskNo, { exact: false }).isVisible()
     console.log(JSON.stringify({
       mode: process.env.TASKFLOW_E2E_DIRECT_WS === 'true' ? 'direct' : 'proxy',
       iteration,
@@ -283,6 +291,11 @@ for (let iteration = 1; iteration <= 10; iteration += 1) {
       browserReceivedAt,
       uiAppliedAt,
       diagnostics: diagnosticsBody,
+      browserCheckpoints: {
+        C5_CHROMIUM_RAW_WS_FRAME: Boolean(rawMessage),
+        C6_STOMP_CALLBACK: Boolean(stompMessage),
+        C7_UI_APPLIED: uiApplied,
+      },
     }))
     await testInfo.attach('notification-delivery-trace.json', {
       body: Buffer.from(JSON.stringify({
@@ -292,6 +305,11 @@ for (let iteration = 1; iteration <= 10; iteration += 1) {
         browserReceivedAt,
         uiAppliedAt,
         diagnostics: diagnosticsBody,
+        browserCheckpoints: {
+          C5_CHROMIUM_RAW_WS_FRAME: Boolean(rawMessage),
+          C6_STOMP_CALLBACK: Boolean(stompMessage),
+          C7_UI_APPLIED: uiApplied,
+        },
       }, null, 2)),
       contentType: 'application/json',
     })
