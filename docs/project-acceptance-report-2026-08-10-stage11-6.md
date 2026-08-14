@@ -2,6 +2,12 @@
 
 日期：2026-08-10
 
+## Final Security Closeout 复验增补（2026-08-14）
+
+Log4j2 依赖已按真实依赖树做精确治理：Spring Boot logging BOM 的 `log4j2.version` 从 2.24.3 固定到 2.25.5，解析出的 `log4j-api` 与 `log4j-to-slf4j` 统一为 2.25.5。后端默认测试 85/0/0/5，显式集成 verify 85/0/0/0，Flyway V1–V8 与 JaCoCo 门禁通过；npm 官方 audit（含生产依赖）为 0 vulnerabilities，前端 typecheck/build 通过。
+
+本轮未改变 83/100 正式评分，也未关闭 Nginx/STOMP P1。上一轮未建立证据的 C4 WebSocket transport decorator 在新 acceptance 镜像中引起浏览器连接回归，已撤掉；C4 仍为 `NOT_ESTABLISHED`，P1 保持 `OPEN_WITH_DOCUMENTED_LIMIT`。最终 acceptance Chromium direct/proxy 各 `19/19`；本机 OSV 扫描因 Docker API 权限未执行，但最终 commit 对应的远程 fast-check、integration-security 与 OSV 均成功，OSV 输出 `No issues found`。
+
 ## 评分处理
 
 本次没有为了修复 Nginx 代理路径而机械调整总分。阶段 7 的 85/100 保持不变：本阶段把“本地 Nginx WebSocket P1”从未关闭更新为已关闭，但新增的证据仍然属于 Docker Compose 单节点本地验证，不能升级为生产可用性、HA 或云 Ingress 得分。

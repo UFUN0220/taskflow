@@ -22,20 +22,17 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
     private final AuthTokenResolver tokenResolver;
     private final NotificationWebSocketHandshakeHandler handshakeHandler;
     private final NotificationWebSocketDiagnosticsInterceptor diagnosticsInterceptor;
-    private final NotificationWebSocketTransportDiagnostics transportDiagnostics;
 
     public NotificationWebSocketConfiguration(NotificationWebSocketProperties properties,
                                                NotificationWebSocketChannelInterceptor channelInterceptor,
                                                AuthTokenResolver tokenResolver,
                                                NotificationWebSocketHandshakeHandler handshakeHandler,
-                                               org.springframework.beans.factory.ObjectProvider<NotificationWebSocketDiagnosticsInterceptor> diagnosticsProvider,
-                                               org.springframework.beans.factory.ObjectProvider<NotificationWebSocketTransportDiagnostics> transportProvider) {
+                                               org.springframework.beans.factory.ObjectProvider<NotificationWebSocketDiagnosticsInterceptor> diagnosticsProvider) {
         this.properties = properties;
         this.channelInterceptor = channelInterceptor;
         this.tokenResolver = tokenResolver;
         this.handshakeHandler = handshakeHandler;
         this.diagnosticsInterceptor = diagnosticsProvider == null ? null : diagnosticsProvider.getIfAvailable();
-        this.transportDiagnostics = transportProvider == null ? null : transportProvider.getIfAvailable();
     }
 
     @Override
@@ -64,12 +61,4 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
             registration.interceptors(diagnosticsInterceptor);
         }
     }
-
-    @Override
-    public void configureWebSocketTransport(org.springframework.web.socket.config.annotation.WebSocketTransportRegistration registration) {
-        if (transportDiagnostics != null) {
-            registration.addDecoratorFactory(transportDiagnostics);
-        }
-    }
-
 }

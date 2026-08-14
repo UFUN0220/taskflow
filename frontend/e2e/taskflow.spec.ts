@@ -185,6 +185,11 @@ test('浏览器真实收到 STOMP 通知消息', async ({ page }) => {
   createdTaskIds.push(task.taskId)
   await submitTask(adminSession.token, task.taskId, task.version)
   await expect.poll(async () => {
+    const response = await page.request.get('/api/notifications?page=1&size=50&status=UNREAD')
+    const body = await response.json() as ApiEnvelope<{ records: Array<{ content: string }> }>
+    return body.data?.records?.some((item) => item.content.includes(taskNo)) ?? false
+  }, { timeout: 15_000 }).toBe(true)
+  await expect.poll(async () => {
     const debug = await page.evaluate((frames) => {
       const state = window as unknown as { __taskflowWsMessages?: string[]; __taskflowWsStates?: string[]; __taskflowWsSentFrames?: string[] }
       return {

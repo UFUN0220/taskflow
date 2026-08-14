@@ -46,12 +46,6 @@ public class NotificationDeliveryDiagnostics {
                 sessionId, principalName, Thread.currentThread().getName(), stompCommand, Instant.now(), 0, List.of()));
     }
 
-    public void transportOutbound(Long notificationId, String sourceMessageId, String sessionId,
-                                  String frameType) {
-        record(new Checkpoint("C4_SERVER_WEBSOCKET_OUTBOUND", notificationId, sourceMessageId, null, null,
-                sessionId, null, Thread.currentThread().getName(), frameType, Instant.now(), 0, List.of()));
-    }
-
     public TraceSnapshot snapshot(Long notificationId) {
         List<Checkpoint> checkpoints = traces.get(notificationId);
         if (checkpoints == null) {

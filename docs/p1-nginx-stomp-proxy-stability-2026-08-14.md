@@ -2,6 +2,8 @@
 
 ## 结论
 
+> 后续 Final Security Closeout 复验说明：本报告中的 20/20 与 2×19/19 是此前已完成的独立证据；本轮没有用 Log4j 修复或未验证的 C4 装饰器改写这些历史结果。新镜像初次 direct 全量为 18/19，失败场景已保存 trace/screenshot/video；撤掉未建立证据且影响连接稳定性的 C4 transport decorator，并增加通知事实持久化条件等待后，最终 direct `19/19`、proxy `19/19`。C4 仍未建立，P1 继续保持 `OPEN_WITH_DOCUMENTED_LIMIT`。
+
 本次复验基于本地 acceptance Compose 环境、相同数据库/凭据边界和真实 Chromium。当前结果：
 
 - direct 定向通知：20/20；

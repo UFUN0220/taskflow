@@ -1,5 +1,7 @@
 # Changelog
 
+- Final Security Closeout（2026-08-14）：将 Spring Boot logging BOM 管理的 Log4j2 从 2.24.3 精确固定到 2.25.5，解析树无混用；最终 acceptance Chromium direct/proxy 各 19/19，Maven 默认测试、前端官方 npm audit/typecheck/build 均通过。最终 commit 对应的远程 fast-check、integration-security 和 OSV 均成功，OSV 输出 `No issues found`。撤掉未建立证据且导致新 acceptance 镜像 WebSocket 回归的 C4 transport decorator，保留 C4 `NOT_ESTABLISHED` 和 Nginx/STOMP P1 `OPEN_WITH_DOCUMENTED_LIMIT`。正式评分维持 83/100；本机 Testcontainers/OSV 容器扫描仍受 Docker API 权限限制。
+
 - Stage 13 Final Freeze（2026-08-14）：完整 npm audit 的唯一 high 已定位为 `vite@6.4.3 → postcss@8.5.26 → nanoid@3.3.17` 间接开发依赖（advisory 1139427），通过精确 `overrides` 更新为 `nanoid@3.3.18`。`npm ci` 后完整 audit 与生产 audit 均为 0 vulnerabilities；typecheck/build、Chromium direct/proxy 9/9、后端默认回归和显式 Testcontainers verify 均完成。入口 JS 保持 583,825 B，Vite 大 chunk warning 与性能因果边界保留，评分维持 85/100。
 
 - Stage 13 容器复验补充（2026-08-14）：Docker Desktop daemon 恢复后，在 `desktop-linux` context 下真实执行 `-Dtaskflow.integration=true verify`，85 tests、0 failures、0 errors、0 skipped；Stage12 4/4、Stage14 1/1，Flyway V1-V8 与 JaCoCo 门禁通过。此前本机 daemon 未运行造成的跳过不再作为最终状态。
