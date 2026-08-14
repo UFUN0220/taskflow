@@ -48,7 +48,7 @@
 
 ## MySQL、应用和 WebSocket
 
-本阶段 MySQL 停止和 backend 重启被执行审批拒绝，未绕过限制。既有 `docs/deployment.md` 记录过保留卷 Compose 重启后 Flyway V8、后端健康和登录恢复；这属于既有本地证据，不冒充本阶段新演练。
+本阶段 MySQL 停止和 backend 重启被执行审批拒绝，未绕过限制。既有 `docs/06-environment-and-setup.md` 记录过保留卷 Compose 重启后 Flyway V8、后端健康和登录恢复；这属于既有本地证据，不冒充本阶段新演练。
 
 WebSocket 也没有新的浏览器证据。Stage 3 已观察到浏览器真实建立 `/ws/notifications` 并收到 STOMP `CONNECTED`，但订阅随后失败；因此本阶段不声称后端重启后的浏览器自动重连或离线通知补拉通过。当前设计仍以 MySQL `notification` 为最终事实，WebSocket 只负责实时体验，客户端通过 HTTP 未读接口补拉。
 

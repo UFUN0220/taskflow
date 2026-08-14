@@ -139,17 +139,16 @@
 * README.md：项目介绍、技术栈、启动方式、功能进度；
 * AGENTS.md：Codex执行规范；
 * CHANGELOG.md：每阶段变更记录；
-* docs/requirements.md：角色、用例和业务规则；
-* docs/architecture.md：模块和调用关系；
-* docs/database.md：ER图、表结构和索引理由；
-* docs/security.md：认证、RBAC和数据权限；
+* docs/01-overview.md：项目目标、角色、核心用例和业务边界；
+* docs/02-architecture.md：模块、调用关系、数据边界和一致性策略；
+* docs/07-security-and-dependencies.md：认证、RBAC、数据权限和依赖治理；
 * docs/task-state-machine.md：任务状态和流转规则；
-* docs/message-flow.md：提醒和消息链路；
-* docs/testing.md：测试分类和执行方式；
-* docs/performance.md：压测环境、脚本和真实结果；
-* docs/deployment.md：Docker和Kubernetes部署；
-* docs/learning-notes.md：各阶段知识总结；
-* docs/interview-notes.md：面试问题和回答。
+* docs/02-architecture.md：提醒、消息链路、任务状态和数据一致性；
+* docs/04-testing-and-quality.md：测试分类、质量门禁和执行方式；
+* docs/05-performance.md：压测环境、脚本和真实结果；
+* docs/06-environment-and-setup.md：Docker、Kubernetes和本地验收环境；
+* docs/03-development-history.md：各阶段知识总结和变更脉络；
+* docs/09-interview-materials.md：面试问题、回答边界和简历表述。
 
 每阶段结束后更新对应文档，不允许等项目结束后一次性补文档。
 
@@ -810,4 +809,3 @@
 11. 按统一交付格式汇报阶段0结果。
 
 如果发现环境冲突，应先说明冲突和最安全的处理方式，不要直接删除现有数据库、容器、卷或用户文件。
-
