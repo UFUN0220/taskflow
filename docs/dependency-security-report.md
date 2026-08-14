@@ -1,5 +1,21 @@
 # 依赖漏洞治理与 CI 门禁记录（阶段 11，2026-08-10）
 
+## Final Security Closeout：Log4j2 精确治理（2026-08-14，进行中）
+
+本节是当前冻结候选的最新事实，优先于下方历史阶段快照；正式封板仍以远程 workflow 结果为准。
+
+- 真实依赖路径：`spring-boot-starter-actuator:3.5.16` → `spring-boot-starter-logging:3.5.16` → `log4j-to-slf4j` → `log4j-api`。
+- 根因版本：Spring Boot BOM 管理的 `log4j2.version=2.24.3`；OSV `GHSA-qv9r-c865-cp47` 报告 `log4j-api` 2.24.3，修复版本 2.25.5。
+- 精确改动：仅在 `pom.xml` 增加 `<log4j2.version>2.25.5</log4j2.version>`；未改变 Spring Boot、业务依赖或扫描门禁。
+- 解析结果：`log4j-api`、`log4j-to-slf4j` 均为 2.25.5；effective POM 未发现 2.24.3/2.25.5 混用。
+- Maven `test`：85 tests，0 failures，0 errors，5 skipped；显式 `-Dtaskflow.integration=true verify`：85 tests，0 failures，0 errors，0 skipped，JaCoCo 通过。
+- npm 官方 registry：完整 audit 与 `--omit=dev` 均为 0 vulnerabilities；typecheck/build 通过。Vite 583.83 kB 大 chunk warning 仍是已知非本阶段问题。
+- 本机 OSV-Scanner v2.5.0：官方 Docker 镜像可识别，但扫描容器因本机 Docker API 权限未能执行，分类为 `LOCAL_OSV_INFRA_FAILURE`，不计为漏洞清零。
+- 远程封板已完成：最终 commit 对应的 fast-check、integration-security 和 OSV job 均成功；OSV 输出 `No issues found`、scanner exit 0，未再出现 Log4j advisory。该结果只表示当前锁定依赖快照未被 OSV 命中，不能写成“零供应链风险”。
+- 最终 acceptance Chromium 复验：backend direct `19/19`，Nginx proxy `19/19`；C4 仍未建立，P1 仍为 `OPEN_WITH_DOCUMENTED_LIMIT`。
+
+本阶段同时撤掉了上一轮未建立证据且在新 acceptance 镜像中引发 WebSocket 回归的 acceptance-only C4 transport decorator；C4 保持 `NOT_ESTABLISHED`，不作为依赖治理加分或生产结论。Nginx/STOMP P1 继续为 `OPEN_WITH_DOCUMENTED_LIMIT`。
+
 本报告只记录本轮实际执行结果。`target/` 已被 Git 忽略；最终源码对应的原始 OWASP 报告副本为 `target/phase11-owasp-final.json` 和 `target/phase11-owasp-final.xml`。报告中的 CVE 命中是 Dependency-Check 的 CPE/NVD 最佳努力结果，hosted suppressions 下载失败时不能直接当作已确认可利用漏洞，也不能当作零漏洞。
 
 ## Stage 11.5B：精确治理当前状态（2026-08-11）

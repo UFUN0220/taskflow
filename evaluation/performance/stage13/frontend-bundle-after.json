@@ -1,0 +1,77 @@
+{
+  "capturedAt": "2026-08-13T16:54:04.4045834Z",
+  "stage": "13",
+  "build": "after",
+  "entry": "assets/index-mv98YSEC.js",
+  "assets": [
+    {
+      "file": "DashboardPage-Cvt5vnDf.js",
+      "rawBytes": 3418,
+      "gzipBytes": 1810
+    },
+    {
+      "file": "index-0hDvwglS.css",
+      "rawBytes": 4073,
+      "gzipBytes": 1583
+    },
+    {
+      "file": "index-Co_cNTMh.js",
+      "rawBytes": 98143,
+      "gzipBytes": 31239
+    },
+    {
+      "file": "index-DAWH1q-x.js",
+      "rawBytes": 24597,
+      "gzipBytes": 8429
+    },
+    {
+      "file": "index-DXt2d5V_.js",
+      "rawBytes": 122067,
+      "gzipBytes": 38568
+    },
+    {
+      "file": "index-mv98YSEC.js",
+      "rawBytes": 583825,
+      "gzipBytes": 192272
+    },
+    {
+      "file": "LoginPage-CCfg6PBT.js",
+      "rawBytes": 2687,
+      "gzipBytes": 1484
+    },
+    {
+      "file": "ManagementPage-BmX1-4Xs.js",
+      "rawBytes": 6647,
+      "gzipBytes": 2407
+    },
+    {
+      "file": "NotificationCenter-BsXmqHbM.js",
+      "rawBytes": 19308,
+      "gzipBytes": 7134
+    },
+    {
+      "file": "ReloadOutlined-DZ20-Jxq.js",
+      "rawBytes": 985,
+      "gzipBytes": 616
+    },
+    {
+      "file": "row-D_MSb0dt.js",
+      "rawBytes": 17697,
+      "gzipBytes": 6118
+    },
+    {
+      "file": "Table-B3Jt0TZ8.js",
+      "rawBytes": 208006,
+      "gzipBytes": 65885
+    },
+    {
+      "file": "TaskPage-DOQgZ4TV.js",
+      "rawBytes": 96542,
+      "gzipBytes": 31023
+    }
+  ],
+  "totalRawBytes": 1187995.0,
+  "totalGzipBytes": 388568.0,
+  "warning": "Vite warning retained: index-mv98YSEC.js is 583825 raw bytes",
+  "note": "gzip bytes generated locally for comparison; Vite output gzip values are also preserved in build log"
+}

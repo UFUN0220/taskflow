@@ -38,6 +38,7 @@
         <netty.version>4.1.136.Final</netty.version>
         <commons-lang3.version>3.18.0</commons-lang3.version>
         <bouncycastle.version>1.84</bouncycastle.version>
+        <log4j2.version>2.25.5</log4j2.version>
         <!-- Override with -Ddependency-check.data.directory in local/CI runs. -->
         <dependency-check.data.directory>${project.build.directory}/dependency-check-data</dependency-check.data.directory>
     </properties>

@@ -1,5 +1,7 @@
 # Stage 11.5B-E2E：Spring Boot 3.5.16 升级后浏览器回归
 
+> **P1 当前复验覆盖说明（2026-08-14）**：本文前述 `10/10`、`2×9/9` 和 `85/100` 是历史阶段证据，不是本次独立最终结论。P1 最终复验的当前结果为 direct 定向 `20/20`、proxy 定向 `20/20`，direct 完整 `2×19/19`，proxy 完整 `2×19/19`，正式评分保持 `83/100`。C1/C2/C3/C5/C6/C7 已有当前证据；服务器物理 WebSocket `sendMessage` 边界 C4 因 acceptance 镜像未重新部署诊断类而为 `NOT_ESTABLISHED`。详见 [P1 最终复验报告](p1-nginx-stomp-proxy-stability-2026-08-14.md)。
+
 ## 结论
 
 本报告保留了升级后首轮 `8/9 → 9/9` 的历史证据，并补充 Stage 11.5B-E2E-F 的定向诊断和稳定性门禁。新的 acceptance-only 诊断在真实 Chromium 中关联了持久化、user destination dispatch、client outbound channel、浏览器 MESSAGE 和 UI 应用五个检查点。

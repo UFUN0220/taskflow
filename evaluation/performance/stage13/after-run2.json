@@ -1,0 +1,105 @@
+{
+  "generatedAt": "2026-08-11T07:45:53.510890+00:00",
+  "baseUrl": "http://127.0.0.1:18202",
+  "parameters": {
+    "scenarios": [
+      "login",
+      "task_list",
+      "task_detail",
+      "task_create",
+      "state_update",
+      "notification_list"
+    ],
+    "concurrency": 20,
+    "warmupSeconds": 10,
+    "durationSeconds": 60,
+    "seed": 20260807,
+    "preparedTasks": 1000
+  },
+  "machine": {
+    "platform": "Windows-11-10.0.22631-SP0",
+    "python": "3.12.1",
+    "cpuCount": 16,
+    "jvmArgs": "not-provided"
+  },
+  "scenarios": {
+    "login": {
+      "requests": 3925,
+      "successes": 3925,
+      "errors": 0,
+      "errorRate": 0.0,
+      "qps": 65.417,
+      "averageMs": 178.526,
+      "p95Ms": 320.981,
+      "p99Ms": 453.453,
+      "statusCodes": {
+        "200": 3925
+      }
+    },
+    "task_list": {
+      "requests": 3743,
+      "successes": 3743,
+      "errors": 0,
+      "errorRate": 0.0,
+      "qps": 62.383,
+      "averageMs": 27.583,
+      "p95Ms": 55.443,
+      "p99Ms": 86.886,
+      "statusCodes": {
+        "200": 3743
+      }
+    },
+    "task_detail": {
+      "requests": 3849,
+      "successes": 3849,
+      "errors": 0,
+      "errorRate": 0.0,
+      "qps": 64.15,
+      "averageMs": 19.213,
+      "p95Ms": 44.134,
+      "p99Ms": 67.102,
+      "statusCodes": {
+        "200": 3849
+      }
+    },
+    "task_create": {
+      "requests": 3790,
+      "successes": 3790,
+      "errors": 0,
+      "errorRate": 0.0,
+      "qps": 63.167,
+      "averageMs": 53.618,
+      "p95Ms": 91.97,
+      "p99Ms": 120.145,
+      "statusCodes": {
+        "200": 3790
+      }
+    },
+    "state_update": {
+      "requests": 603,
+      "successes": 603,
+      "errors": 0,
+      "errorRate": 0.0,
+      "qps": 10.05,
+      "averageMs": 59.959,
+      "p95Ms": 97.196,
+      "p99Ms": 134.535,
+      "statusCodes": {
+        "200": 603
+      }
+    },
+    "notification_list": {
+      "requests": 3837,
+      "successes": 3837,
+      "errors": 0,
+      "errorRate": 0.0,
+      "qps": 63.95,
+      "averageMs": 22.149,
+      "p95Ms": 46.833,
+      "p99Ms": 69.826,
+      "statusCodes": {
+        "200": 3837
+      }
+    }
+  }
+}

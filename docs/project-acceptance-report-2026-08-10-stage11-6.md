@@ -2,6 +2,12 @@
 
 日期：2026-08-10
 
+## Final Security Closeout 复验增补（2026-08-14）
+
+Log4j2 依赖已按真实依赖树做精确治理：Spring Boot logging BOM 的 `log4j2.version` 从 2.24.3 固定到 2.25.5，解析出的 `log4j-api` 与 `log4j-to-slf4j` 统一为 2.25.5。后端默认测试 85/0/0/5，显式集成 verify 85/0/0/0，Flyway V1–V8 与 JaCoCo 门禁通过；npm 官方 audit（含生产依赖）为 0 vulnerabilities，前端 typecheck/build 通过。
+
+本轮未改变 83/100 正式评分，也未关闭 Nginx/STOMP P1。上一轮未建立证据的 C4 WebSocket transport decorator 在新 acceptance 镜像中引起浏览器连接回归，已撤掉；C4 仍为 `NOT_ESTABLISHED`，P1 保持 `OPEN_WITH_DOCUMENTED_LIMIT`。最终 acceptance Chromium direct/proxy 各 `19/19`；本机 OSV 扫描因 Docker API 权限未执行，但最终 commit 对应的远程 fast-check、integration-security 与 OSV 均成功，OSV 输出 `No issues found`。
+
 ## 评分处理
 
 本次没有为了修复 Nginx 代理路径而机械调整总分。阶段 7 的 85/100 保持不变：本阶段把“本地 Nginx WebSocket P1”从未关闭更新为已关闭，但新增的证据仍然属于 Docker Compose 单节点本地验证，不能升级为生产可用性、HA 或云 Ingress 得分。
@@ -46,3 +52,13 @@ Google 官方 OSV-Scanner `v2.5.0` 已作为同一 workflow 的主依赖漏洞�
 完整 A/B 帧序列、Nginx 修改前后、Principal 对照与三轮稳定性记录见：
 
 - [阶段 11.6 浏览器 E2E 报告](e2e-browser-report-2026-08-10-stage11-6.md)
+
+## 阶段 13：同参数性能复测与前端 Bundle 第二轮优化
+
+阶段13只修改了 `frontend/src/App.tsx`：NotificationCenter 改为异步懒加载，保持通知 API、STOMP、认证和路由契约不变。入口 JS 从 767,334 B raw / 248,379 B gzip 降至 583,825 B raw / 192,272 B gzip；总 JS raw 基本保持不变，结论是 code splitting，不是总 payload reduction。Vite 583,825 B 大 chunk warning 仍保留。
+
+使用相同的 10 部门、100 用户、1000 任务、20 并发、10 秒预热、60 秒采样和六个场景，Before/After 各完成三轮，六轮 HTTP 错误数均为 0。Before 第1轮和后续轮次波动明显；由于本阶段没有改变后端 API/SQL/连接池，不能把 QPS 差异归因于前端。阶段13性能状态为 `PARTIAL_CAUSALITY`，总分保持 85/100。原始 JSON、运行时观测与比较见[阶段13性能复测](performance-retest-2026-08-11-stage13.md)和[阶段13优化报告](performance-and-frontend-optimization-2026-08-11-stage13.md)。
+
+新前端 acceptance 镜像的真实 Chromium 回归：backend direct 9/9、Nginx `/ws` proxy 9/9。一次首轮 direct 8/9 的失败经单场景复跑和完整复验确认是通知异步派发波动，不改断言、不隐藏失败。最终证据仍属于本地 Compose，不升级为生产容量或 HA 结论。
+
+阶段13最终门禁：`npm ci`、`npm run typecheck`、`npm run build`、普通/acceptance Compose config、Kustomize 通过；完整 `npm audit` 与 `npm audit --omit=dev` 均为 0 vulnerabilities。冻结前唯一 high 为 Vite→PostCSS 的间接开发依赖 `nanoid@3.3.17`（advisory 1139427），已通过精确 `overrides` 更新为 `nanoid@3.3.18`，未使用强制升级或关闭门禁。最终 Chromium direct/proxy 均为 9/9；`mvnw.cmd test` 为 85 tests、0 failures、0 errors、5 skipped；Docker Desktop `desktop-linux` context 下显式 integration verify 为 85 tests、0 failures、0 errors、0 skipped，Stage12 4/4、Stage14 1/1，Flyway V1-V8 与 JaCoCo 门禁通过。阶段状态仍为：`COMPLETED_WITH_PERFORMANCE_CAUSALITY_LIMIT`，评分保持 85/100，允许进入独立最终复评分，不自动加分。

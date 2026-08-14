@@ -61,5 +61,4 @@ public class NotificationWebSocketConfiguration implements WebSocketMessageBroke
             registration.interceptors(diagnosticsInterceptor);
         }
     }
-
 }
